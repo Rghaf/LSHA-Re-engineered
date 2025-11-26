@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>Start LSHA Learning</title></head>
+<body>
+    <h1>Trigger LSHA Learning Task</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="case_study">Case Study:</label>
+        <select name="case_study" id="case_study">
+            <option value="THERMO">THERMO</option>
+            <option value="HRI">HRI</option>
+            <!-- Add other case studies -->
+        </select><br><br>
+
+        <label for="pov">Point of View:</label>
+        <input type="text" id="pov" name="pov" value="HRI"><br><br>
+
+        <label for="start_date">Start Date:</label>
+        <input type="date" id="start_date" name="start_date" value="2024-01-01"><br><br>
+
+        <label for="end_date">End Date:</label>
+        <input type="date" id="end_date" name="end_date" value="2024-12-31"><br><br>
+
+        <button type="submit">Start Learning</button>
+    </form>
+</body>
+</html>
