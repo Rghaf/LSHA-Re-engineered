@@ -1,173 +1,414 @@
 import os
 import sys
 import logging
-import shutil
-import glob
-import configparser
-from datetime import datetime
+import json
+import numpy as np
+from functools import partial
 from celery import shared_task
-from django.conf import settings # Use Django settings
+from django.conf import settings
+from datetime import datetime
 
-# --- CRITICAL: Add all module paths to the worker's sys.path ---
-# This uses the paths you just defined in settings.py
+# --- Path Setup ---
+if str(settings.LSHA_ROOT) not in sys.path:
+    sys.path.insert(0, str(settings.LSHA_ROOT))
 
-# --- Now, your other imports (like 'import sha_learning...') will work ---
-# import sha_learning.pltr.lsha_report as report
-# ... (rest of your imports)
-# --- IMPORTANT: Add project paths to sys.path for Celery worker ---
-# Resolve root paths from Django settings with safe defaults
-try:
-    LSHA_ROOT = getattr(settings, 'LSHA_ROOT', os.path.join(settings.BASE_DIR, 'LSHA_WEB/core_algorithm', 'lsha'))
-    AUTOTWIN_ROOT = getattr(settings, 'AUTOTWIN_ROOT', os.path.join(settings.BASE_DIR, 'core_algorithm', 'autotwin_automata_learning'))
-    SKG_ROOT = getattr(settings, 'SKG_ROOT', os.path.join(settings.BASE_DIR, 'core_algorithm', 'skg_connector'))
-    MAPPER_ROOT = getattr(settings, 'MAPPER_ROOT', os.path.join(settings.BASE_DIR, 'core_algorithm', 'sha2dt_semantic_mapper'))
-except Exception:
-    # If settings or BASE_DIR are not available for some reason, fall back to None
-    LSHA_ROOT = None
-    AUTOTWIN_ROOT = None
-    SKG_ROOT = None
-    MAPPER_ROOT = None
+# --- Imports from your project ---
+from core_algorithm.lsha.sha_learning.domain.lshafeatures import Trace, FlowCondition
+from core_algorithm.lsha.sha_learning.domain.sigfeatures import Event, Timestamp, SampledSignal
+from core_algorithm.lsha.sha_learning.domain.obstable import Row, State, ObsTable
+from core_algorithm.lsha.sha_learning.learning_setup.logger import Logger
+from core_algorithm.lsha.sha_learning.learning_setup.learner import Learner
 
-# Ensure the worker can import the LSHA packages
-if LSHA_ROOT:
-    sys.path.insert(0, str(LSHA_ROOT))
-if AUTOTWIN_ROOT:
-    sys.path.insert(0, str(AUTOTWIN_ROOT))
-if SKG_ROOT:
-    sys.path.insert(0, str(SKG_ROOT))
-if MAPPER_ROOT:
-    sys.path.insert(0, str(MAPPER_ROOT))
-# --- End Path Setup ---
+# --- Plotting & Reporting Imports ---
+import core_algorithm.lsha.sha_learning.pltr.sha_pltr as ha_pltr
+import core_algorithm.lsha.sha_learning.pltr.lsha_report as report
+# from core_algorithm.lsha.sha_learning.learning_setup.plotter import distr_hist
 
-# --- Now import your project modules ---
-try:
-    import sha_learning.pltr.lsha_report as report
-    import sha_learning.pltr.sha_pltr as ha_pltr
-    # ... (Import ALL other necessary modules from learn_model.py) ...
-    from sha_learning.case_studies.auto_twin.sul_definition import getSUL
-    # ... (Import specific SULs) ...
-    from sha_learning.domain.lshafeatures import Trace
-    from sha_learning.domain.obstable import ObsTable
-    from sha_learning.domain.sulfeatures import SystemUnderLearning
-    from sha_learning.learning_setup.learner import Learner
-    from sha_learning.learning_setup.logger import Logger
-    from sha_learning.learning_setup.teacher import Teacher
-    from sha_learning.pltr.energy_pltr import distr_hist
-    # Handle potential import errors for graphics if worker has no display
-    try:
-        import matplotlib
-        matplotlib.use('Agg') # Force non-interactive backend
-    except ImportError:
-        matplotlib = None # Allow task to run even if plotting fails
-except ImportError as e:
-    # Log or handle import errors - Celery workers might have path issues
-    print(f"Celery Task Import Error: {e}")
-    # You might need more robust path handling here
-# --- End Imports ---
+from rest_api.models import CaseStudy
+from core_algorithm.lsha.sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar
 
+# --- NEW IMPORTS: The Extracted Modules ---
+from .dynamic_tracegenerator import CustomTraceGenerator
+from .dynamic_sul import (
+    parse_data_dynamic, 
+    is_chg_pt_dynamic, 
+    label_event_dynamic, 
+    get_physics_param_dynamic
+)
+from .teacher import CustomTeacher
 
 @shared_task
-def run_lsha_learning_task(case_study_name, pov_arg, start_dt_arg, end_dt_arg):
-    """
-    Celery task to run the LSHA learning algorithm.
-    """
-
-    # Initialize logger early (use provided Logger if available, otherwise fall back)
+def run_lsha_learning_task(case_study_id):
     try:
-        LOGGER = Logger(f'LSHA_TASK_{case_study_name}')
-    except Exception:
-        LOGGER = logging.getLogger(f'LSHA_TASK_{case_study_name}')
+        LOGGER = Logger(f'LSHA_TASK_{case_study_id}')
+    except NameError:
+        logging.basicConfig(level=logging.INFO)
+        LOGGER = logging.getLogger(f'LSHA_TASK_{case_study_id}')
 
     try:
+        # 1. Fetch Data
+        try:
+            cs_instance = CaseStudy.objects.get(id=case_study_id)
+        except CaseStudy.DoesNotExist:
+            return {"status": "Error", "message": f"CaseStudy {case_study_id} not found."}
+
+        LOGGER.info(f"Starting Task: {cs_instance.name} (ID: {case_study_id})")
+
+        # 2. Define Paths
+        UPPAAL_BIN = "/opt/uppaal/lib/app/bin/verifyta"
+        if not os.path.exists(UPPAAL_BIN):
+             UPPAAL_BIN = "/usr/bin/verifyta" 
+        
+        OUTPUT_DIR = "/home/rghaf/Projects/lsha_web/results/upp_results"
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+        # 3. Parse JSON & Variables
+        DRIVER_SIGNAL = cs_instance.driver_signal
+        MAIN_VARIABLE = cs_instance.main_variable
+        CONTEXT_VARIABLES = cs_instance.context_variables
+
+        if CONTEXT_VARIABLES is None:
+            CONTEXT_VARIABLES = []
+        
+        json_data_str = cs_instance.user_json
+        data_dict = json.loads(json_data_str)
+        
+        events = data_dict.get('events', [])
+        real_events = []
+        for e in events:
+            real_events.append(Event(e.get('channel', ''), e.get('guard', ''), e.get('symbol', '')))
+            if 'trigger_value' in e:
+                real_events[-1].trigger_value = e['trigger_value']
+            
+        trace_gen_config = data_dict.get('trace_generation', {})
+
+        # ---------------------------------------------------------
+        # PHASE 1: TRACE GENERATOR TEST
+        # ---------------------------------------------------------
+        print("\n" + "="*40)
+        print("PHASE 1: CUSTOM TRACE GENERATOR TEST")
+        print("="*40)
+
+        try:
+            custom_tg = CustomTraceGenerator(
+                cs_name=cs_instance.name,
+                resample_strategy=cs_instance.resample_strategy,
+                uppaal_bin_path=UPPAAL_BIN,
+                uppaal_model_path=cs_instance.uppaal_model_file.path,
+                uppaal_query_path=cs_instance.uppaal_query_file.path,
+                output_dir=OUTPUT_DIR,
+                trace_gen_config=trace_gen_config
+            )
+            print("Generator Initialized.")
+        except Exception as e:
+            print(f"FAILED to initialize generator: {e}")
+            raise e
+
+        if len(real_events) > 0:
+            test_trace_len = min(3, len(real_events))
+            test_trace_obj = Trace(real_events[:test_trace_len])
+            custom_tg.set_word(test_trace_obj)
+        else:
+            custom_tg.set_word(Trace([]))
+
+        print("Calling get_traces(1)...")
+        generated_files = custom_tg.get_traces(1)
+        print(f"Generated Files: {generated_files}")
+        
+        # ---------------------------------------------------------
+        # PHASE 2: SUL FUNCTIONS TEST
+        # ---------------------------------------------------------
+        sul_args = {
+            'name': cs_instance.name,
+            'default_m': 0, 
+            'default_d': 0, 
+            'driver': DRIVER_SIGNAL,
+            'main_var': MAIN_VARIABLE,
+            'context_variables': CONTEXT_VARIABLES,
+            'events': data_dict.get('events', []),
+            'models': data_dict.get('models', [])
+        }
+
+        if generated_files and os.path.exists(generated_files[0]):
+            print("\n" + "="*40)
+            print("PHASE 2: DYNAMIC SUL FUNCTIONS TEST")
+            print("="*40)
+            
+            trace_file_path = generated_files[0]
+
+            # 1. Test Parse Data
+            print(">>> Testing parse_data_dynamic...")
+            signals = parse_data_dynamic(trace_file_path, args=sul_args)
+            print(f"    Signals Extracted: {list(signals.keys())}")
+            
+            # 2. Test Change Point
+            print("\n>>> Testing is_chg_pt_dynamic...")
+            chg_indices = []
+            if 'time' in signals:
+                for i in range(1, min(100, len(signals['time']))):
+                    if is_chg_pt_dynamic(signals, i, args=sul_args):
+                        chg_indices.append(i)
+                print(f"    Change points found at indices: {chg_indices}")
+
+                # 3. Test Label Event
+                print("\n>>> Testing label_event_dynamic...")
+                if chg_indices:
+                    idx = chg_indices[0]
+                    lbl = label_event_dynamic(signals, idx, args=sul_args)
+                    print(f"    Event at index {idx}: {lbl}")
+                else:
+                    print("    No events detected to label.")
+
+                # 4. Test Physics Params
+                print("\n>>> Testing get_physics_param_dynamic...")
+                if chg_indices:
+                    start_i = chg_indices[0]
+                    end_i = start_i + 20
+                    if end_i < len(signals['time']):
+                        params = get_physics_param_dynamic(signals, start_i, end_i, args=sul_args)
+                        print(f"    Fitted Params (idx {start_i}-{end_i}): {params}")
+            else:
+                print("    [Error] No time signal found. Parsing failed.")
+
+            print("\n" + "="*40)
+            print("ALL TESTS COMPLETE")
+            print("="*40)
+        else:
+            print("\n[SKIP] Phase 2 Skipped (No File).")
+
+       # ---------------------------------------------------------
+        # PHASE 2.5: BUILD LSHA SUL OBJECTS
+        # ---------------------------------------------------------
+        flows = []
+        m2d = {}
+        
+        for m in data_dict.get('models', []):
+            m_id = m['id']
+            m_type = m['type']
+            
+            def make_ideal_flow(model_type):
+                def ideal_flow(interval, initial_val):
+                    # Safely convert Timestamp objects to raw seconds!
+                    t_floats = []
+                    for t in interval:
+                        if hasattr(t, 'to_secs'):
+                            t_floats.append(t.to_secs())
+                        else:
+                            t_floats.append(float(t)) # Fallback if it's already a number
+                            
+                    # Now do the math on the raw floats
+                    t_norm = np.array(t_floats) - t_floats[0]
+                    
+                    if 'DECAY' in model_type and 'LINEAR' not in model_type:
+                        return initial_val * np.exp(-0.01 * t_norm)
+                    elif 'GROWTH' in model_type and 'LINEAR' not in model_type:
+                        return initial_val + (100.0 - initial_val) * (1 - np.exp(-0.01 * t_norm))
+                    elif 'LINEAR_GROWTH' in model_type:
+                        return initial_val + 0.1 * t_norm
+                    elif 'LINEAR_DECAY' in model_type:
+                        return initial_val - 0.1 * t_norm
+                        
+                    return np.full_like(t_norm, initial_val)
+                return ideal_flow
+
+            flows.append(FlowCondition(m_id, make_ideal_flow(m_type)))
+            m2d[m_id] = [m_id]
+
+        rv_vars = [RealValuedVar(flows=flows, distr=[], m2d=m2d, label=MAIN_VARIABLE)]
+        
+      # =========================================================
+        # SUL ADAPTERS: Translating Dicts <-> SampledSignal objects
+        # =========================================================
+
+        # 1. Custom Data Structures to perfectly spoof the legacy SUL
+        class CustomPoint:
+            def __init__(self, t_obj, val):
+                self.timestamp = t_obj
+                self.t = t_obj
+                self.value = val
+
+        class CustomSignal:
+            def __init__(self, label, points):
+                self.label = label
+                self.points = points
+                self.t = [pt.t for pt in points]
+                self.values = [pt.value for pt in points]
+
+        def parse_adapter(sim, *, args):
+            sig_dict = parse_data_dynamic(sim, args=args)
+            res = []
+            
+            t_floats = sig_dict.get('time', [])
+            
+            for k, v in sig_dict.items():
+                if k == 'time': continue
+                label = args['driver'] if k == 'driver' else (args['main_var'] if k == 'main' else k)
+                
+                # Build perfect custom points
+                points = []
+                for i in range(len(t_floats)):
+                    t_obj = Timestamp(2026, 1, 1, 0, 0, int(t_floats[i]))
+                    points.append(CustomPoint(t_obj, v[i]))
+                
+                # Build a perfect custom signal
+                res.append(CustomSignal(label, points))
+                
+            return res
+
+        def is_chg_pt_adapter(curr, prev, *, args):
+            return curr != prev
+
+        def label_event_adapter(events_list, new_signals, t_val, *, args):
+            val = None
+            # Find the driver signal's value at this exact timestamp
+            for sig in new_signals:
+                if sig.label == args['driver']:
+                    for pt in sig.points:
+                        if pt.t.to_secs() == t_val.to_secs():
+                            val = pt.value
+                            break
+                    break
+
+            # Match the value dynamically to the actual Event OBJECT and return it
+            if val is not None:
+                for e_obj in events_list:
+                    if hasattr(e_obj, 'trigger_value'):
+                        try:
+                            if float(e_obj.trigger_value) == float(val):
+                                return e_obj
+                        except (ValueError, TypeError):
+                            pass
+            
+            # Absolute dynamic fallback to prevent crashes if a value goes rogue
+            return events_list[0] if events_list else None
+
+        def get_physics_param_adapter(segment, flow, *, args):
+            if not segment or len(segment) < 2:
+                return 0.0
+            
+            pt_start, pt_end = segment[0], segment[-1]
+            dt = pt_end.t.to_secs() - pt_start.t.to_secs()
+            dv = pt_end.value - pt_start.value
+            
+            return (dv / dt) if dt > 0 else 0.0
+
+        # =========================================================
+        sul = SystemUnderLearning(
+            rv_vars=rv_vars,
+            events=real_events,
+            parse_f=partial(parse_adapter, args=sul_args),
+            label_f=partial(label_event_adapter, args=sul_args),
+            param_f=partial(get_physics_param_adapter, args=sul_args),
+            is_chg_pt=partial(is_chg_pt_adapter, args=sul_args),
+            args=sul_args
+        )
+
+        # ---------------------------------------------------------
+        # PHASE 3: CUSTOM TEACHER INITIALIZATION
+        # ---------------------------------------------------------
+        teacher_config = {
+            'noise': getattr(cs_instance, 'noise', 0.0),
+            'p_value': getattr(cs_instance, 'p_value', 0.05),
+            'mi_query': getattr(cs_instance, 'mi_query', False),
+            'plot_ddtw': getattr(cs_instance, 'plot_ddtw', False),
+            'ht_query': getattr(cs_instance, 'ht_query', False),
+            'ht_query_type': getattr(cs_instance, 'ht_query_type', 'D'),
+            'eq_condition': getattr(cs_instance, 'eq_condition', 's'),
+            'is_stochastic': getattr(cs_instance, 'is_stochastic', False),
+            'n_min': 10,
+            'allowUnobservedEvents': False
+        }
+
+        LOGGER.info("Passing config to CustomTeacher...")
+        
+        teacher = CustomTeacher(
+            sul=sul,
+            config_data=teacher_config
+        )
+
+        teacher.TG = custom_tg
+
+        # ---------------------------------------------------------
+        # PHASE 4: RUNNING THE L* LEARNING ALGORITHM
+        # ---------------------------------------------------------
+        print("\n" + "="*40)
+        print("PHASE 4: RUNNING L* LEARNING ALGORITHM")
+        print("="*40)
+
         startTime = datetime.now()
 
-        # --- Configuration Loading ---
-        # compute a local LSHA root fallbacking to Django settings if needed
-        lsha_root = LSHA_ROOT or getattr(settings, 'LSHA_ROOT', os.path.join(settings.BASE_DIR, 'core_algorithm', 'lsha'))
+        try:
+            # 1. Initialize the Observation Table with initial queries
+            LOGGER.info("Initializing Observation Table...")
+            long_traces = [Trace(events=[e]) for e in sul.events]
+            obs_table = ObsTable([], [Trace(events=[])], long_traces)
+            
+            # 2. Initialize the Learner
+            learner = Learner(teacher, obs_table)
 
-        config = configparser.ConfigParser()
-        config_file_path = os.path.join(lsha_root, 'sha_learning', 'resources', 'config', 'config.ini')
-        if not os.path.exists(config_file_path):
-             return f"Error: Config file not found at {config_file_path}"
-        config.read(config_file_path)
+            # 3. RUN LEARNING ALGORITHM
+            LOGGER.info("Running run_lsha()... This will take some time depending on trace generation!")
+            learned_ha = learner.run_lsha(filter_empty=True)
+            LOGGER.info("Learning Complete! Automaton Generated.")
 
-        # --- Get SUL based on input ---
-        CS = case_study_name
-        RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY'] # Still read from config
-        LOGGER.info(f"Starting LSHA task for {CS} with POV={pov_arg}")  # now safe to use LOGGER
-        SUL: SystemUnderLearning = None
-        events_labels_dict = None
-        # (Copy the SUL selection logic from learn_model.py here)
-        if CS == 'THERMO':
-            from sha_learning.case_studies.thermostat.sul_definition import thermostat_cs
-            SUL = thermostat_cs
-        elif CS == 'HRI':
-             from sha_learning.case_studies.hri.sul_definition import hri_cs
-             SUL = hri_cs
-        # ... (Add other elif conditions for ENERGY, AUTO_TWIN, GR3N) ...
-        elif CS == 'AUTO_TWIN':
-             from sha_learning.case_studies.auto_twin.sul_definition import getSUL
-             SUL, events_labels_dict = getSUL()
-        else:
-            raise ValueError(f"Unknown Case Study: {CS}")
+            # ---------------------------------------------------------
+            # PHASE 5: SAVING THE RESULTS
+            # ---------------------------------------------------------
+            LOGGER.info("Saving results and generating Graphviz plots...")
+            
+            # Create a dedicated directory for the final outputs
+            FINAL_OUT_DIR = os.path.join(settings.BASE_DIR, "results", "lsha_models")
+            os.makedirs(FINAL_OUT_DIR, exist_ok=True)
 
-        # --- Initialize Teacher & Learner ---
-        TEACHER = Teacher(SUL, pov=pov_arg, start_dt=start_dt_arg, end_dt=end_dt_arg)
+            # Clean name for the outputs (e.g., "THERMO_V10_UPPAAL")
+            clean_name = cs_instance.name.replace(" ", "_")
+            SHA_NAME = f"{clean_name}_{cs_instance.resample_strategy}"
 
-        long_traces = [Trace(events=[e]) for e in SUL.events]
-        obs_table = ObsTable([], [Trace(events=[])], long_traces)
-        LEARNER = Learner(TEACHER, obs_table)
+            # Generate Graphviz plot (view=False for server environments)
+            graphviz_sha = ha_pltr.to_graphviz(learned_ha, SHA_NAME, FINAL_OUT_DIR + "/", view=False)
 
-        # --- Run Learning Algorithm ---
-        LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
+            # Save SHA source to .txt file
+            txt_path = os.path.join(FINAL_OUT_DIR, f"{SHA_NAME}_source.txt")
+            with open(txt_path, 'w') as f:
+                f.write(graphviz_sha.source)
+            LOGGER.info(f"Graphviz source saved to: {txt_path}")
 
-        # --- Save Results ---
-        # (Copy result saving logic: paths, plotting, report generation)
-        # Ensure paths are correct within the Django project context
-        HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(
-             os.path.join(LSHA_ROOT, 'sha_learning', '') # Adjust format path if needed
-        )
-        REPORT_SAVE_PATH = config['SUL CONFIGURATION']['REPORT_SAVE_PATH'] # Assuming absolute or needs formatting
+            # Plot distribution history if stochastic
+            if teacher.is_stochastic and teacher.ht_query_type == 'S':
+                # Original distr_hist may require save_path kwarg or rely on hardcoded paths,
+                # make sure to adjust it if it complains about positional arguments!
+                try:
+                    distr_hist(teacher.hist, SHA_NAME) 
+                except Exception as e:
+                    LOGGER.warn(f"Could not plot distribution history: {e}")
 
-        # Create directories if they don't exist
-        os.makedirs(HA_SAVE_PATH, exist_ok=True)
-        # Make sure the base path for report exists too if REPORT_SAVE_PATH isn't absolute
+            # Prepare the events_labels_dict for the report
+            events_labels_dict = {e.get('symbol', ''): e.get('symbol', '') for e in events}
 
-        SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, config['SUL CONFIGURATION']['CS_VERSION'])
+            # Save the final experimental data report
+            report.save_data(
+                teacher.symbols, 
+                teacher.distributions, 
+                learner.obs_table,
+                len(teacher.signals), 
+                datetime.now() - startTime, 
+                SHA_NAME, 
+                events_labels_dict,
+                FINAL_OUT_DIR + "/"
+            )
 
-        if matplotlib and ha_pltr: # Check if plotting available
-             graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=False) # view=False for server
+            LOGGER.info(f"----> EXPERIMENTAL RESULTS SAVED IN: {FINAL_OUT_DIR}")
 
-             # Save source
-             sha_source = graphviz_sha.source
-             source_path = os.path.join(HA_SAVE_PATH, f"{SHA_NAME}_source.txt")
-             with open(source_path, 'w') as f:
-                 f.write(sha_source)
+        except Exception as e:
+            LOGGER.error(f"Learning Algorithm Failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"status": "Error", "message": f"Learning Error: {e}"}
 
-             # Save plot if configured
-             if config['DEFAULT']['PLOT_DISTR'] == 'True' and config['LSHA PARAMETERS']['HT_QUERY_TYPE'] == 'S':
-                 distr_hist(TEACHER.hist, SHA_NAME, HA_SAVE_PATH) # Pass save path
-
-        # Save report data
-        report_full_path_prefix = os.path.join(REPORT_SAVE_PATH, SHA_NAME) # Combine path and name prefix
-
-        if report:
-            report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
-                            len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict,
-                            report_full_path_prefix) # Pass the prefix instead of cwd
-
-        result_message = f'----> EXPERIMENTAL RESULTS SAVED IN: {report_full_path_prefix}.txt'
-        LOGGER.info(result_message)
-        return result_message # Return success message
+        return {"status": "Success", "message": "LSHA Algorithm finished successfully!"}
 
     except Exception as e:
-        LOGGER.error(f"LSHA Task Failed: {e}")
-        # Optionally: Use Celery's state update to report failure
-        # self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
-        return f"Error during LSHA task execution: {e}"
-
-# --- Helper function for distr_hist if needed ---
-def distr_hist(hist, name, save_path):
-    # Placeholder: Implement or adapt the histogram plotting to save to save_path
-    print(f"Plotting histograms for {name} to {save_path}")
-    pass
+        LOGGER.error(f"Task Execution Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "Error", "message": f"Task Error: {e}"}

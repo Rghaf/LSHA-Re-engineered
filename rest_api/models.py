@@ -3,9 +3,26 @@ from django.db import models
 # Create your models here.
 class CaseStudy(models.Model):
     id = models.AutoField(primary_key=True)
-    # User is optional, just for restore case studies in the future.
-    user = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=200)
+    email = models.CharField(max_length=100, null=True, blank=True)
+    resample_strategy = models.CharField(max_length=100, default='UPPAAL')
+    uppaal_model_file = models.FileField(upload_to='uploads/uppaal/models', null=True, blank=True)
+    uppaal_query_file = models.FileField(upload_to='uploads/uppaal/queries', null=True, blank=True)
+    csv_file = models.FileField(upload_to='uploads/csv/files', null=True, blank=True)
+    driver_signal = models.CharField(max_length=100, null=True, blank=True)
+    uppaal_query = models.JSONField(null=True, blank=True, default=dict)
+    main_variable = models.CharField(max_length=100, null=True, blank=True, default='')
+    context_variables = models.JSONField(null=True, blank=True, default=list)
+    user_json = models.JSONField(null=True, blank=True)
+    noise = models.FloatField(default=0.0)
+    p_value = models.FloatField(default=0.05)
+    mi_query = models.BooleanField(default=False)
+    plot_ddtw = models.BooleanField(default=False)
+    ht_query = models.BooleanField(default=False)
+    ht_query_type = models.CharField(max_length=100, null=True, blank=True)
+    eq_condition = models.CharField(max_length=100, null=True, blank=True)
+    is_stochastic = models.BooleanField(default=False)
 
     def __str__(self):
         # If name exists, return it. If not, return a placeholder with the ID.
@@ -13,15 +30,3 @@ class CaseStudy(models.Model):
             return self.name
         return f"Unnamed List (ID: {self.id})"
 
-class Event(models.Model):
-    id = models.AutoField(primary_key=True)
-    case_study = models.ForeignKey(CaseStudy, on_delete=models.CASCADE, related_name='events', null=True, blank=True)
-    condition_status = models.BooleanField(default=False)
-    condition = models.CharField(max_length=200, blank=True, null=True)
-    threshold = models.FloatField(null=True, blank=True)
-    channel = models.CharField(max_length=100)
-    symbol = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.channel
-    

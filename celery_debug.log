@@ -1,0 +1,363 @@
+[2025-12-07 16:52:22,707: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2025-12-07 16:52:22,717: INFO/MainProcess] mingle: searching for neighbors
+[2025-12-07 16:52:25,698: WARNING/MainProcess] /home/rghaf/miniforge3/envs/lsha-web/lib/python3.10/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@Rghaf.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
+
+[2025-12-07 16:52:25,700: INFO/MainProcess] mingle: all alone
+[2025-12-07 16:52:25,768: INFO/MainProcess] celery@Rghaf ready.
+[2025-12-07 16:53:36,999: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2025-12-07 16:53:37,003: INFO/MainProcess] mingle: searching for neighbors
+[2025-12-07 16:53:38,014: INFO/MainProcess] mingle: all alone
+[2025-12-07 16:53:38,057: INFO/MainProcess] celery@Rghaf ready.
+[2025-12-07 16:53:54,187: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[dd652baf-e787-48d2-a9d8-497cf23faae9] received
+[2025-12-07 16:53:54,205: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 16:53:54,206: WARNING/ForkPoolWorker-1] 2it [00:00, 15709.00it/s]
+[2025-12-07 16:53:54,206: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:53:54,267: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:53:54,350: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:53:54,351: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 13.86it/s]
+[2025-12-07 16:53:54,351: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 13.81it/s]
+[2025-12-07 16:53:54,352: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:53:54,352: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 39945.75it/s]
+[2025-12-07 16:53:54,354: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (ERROR)	Task Crashed: max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+[2025-12-07 16:53:54,358: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[dd652baf-e787-48d2-a9d8-497cf23faae9] succeeded in 0.16974685501190834s: {'status': 'Error', 'message': 'max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+'}
+[2025-12-07 16:55:48,253: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2025-12-07 16:55:48,257: INFO/MainProcess] mingle: searching for neighbors
+[2025-12-07 16:55:49,271: WARNING/MainProcess] /home/rghaf/miniforge3/envs/lsha-web/lib/python3.10/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@Rghaf.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
+
+[2025-12-07 16:55:49,271: INFO/MainProcess] mingle: all alone
+[2025-12-07 16:55:49,286: INFO/MainProcess] celery@Rghaf ready.
+[2025-12-07 16:55:55,776: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[baf88287-da76-4d4d-952a-19b8381a56d2] received
+[2025-12-07 16:55:55,813: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 16:55:55,814: WARNING/ForkPoolWorker-1] 2it [00:00, 17962.76it/s]
+[2025-12-07 16:55:55,814: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:55:55,870: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:55:55,921: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:55:55,921: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 18.83it/s]
+[2025-12-07 16:55:55,921: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 18.77it/s]
+[2025-12-07 16:55:55,922: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:55:55,922: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 45343.83it/s]
+[2025-12-07 16:55:55,923: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (ERROR)	Task Crashed: max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    # Replace the default TG with our dynamic one
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+[2025-12-07 16:55:55,925: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[baf88287-da76-4d4d-952a-19b8381a56d2] succeeded in 0.14748730199062265s: {'status': 'Error', 'message': 'max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    # Replace the default TG with our dynamic one
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+'}
+[2025-12-07 16:57:41,007: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2025-12-07 16:57:41,011: INFO/MainProcess] mingle: searching for neighbors
+[2025-12-07 16:57:42,024: WARNING/MainProcess] /home/rghaf/miniforge3/envs/lsha-web/lib/python3.10/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@Rghaf.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
+
+[2025-12-07 16:57:42,024: INFO/MainProcess] mingle: all alone
+[2025-12-07 16:57:42,054: INFO/MainProcess] celery@Rghaf ready.
+[2025-12-07 16:57:54,194: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[a54495ce-667b-467b-96a4-997b28c1f635] received
+[2025-12-07 16:57:54,212: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 16:57:54,212: WARNING/ForkPoolWorker-1] 2it [00:00, 22610.80it/s]
+[2025-12-07 16:57:54,213: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:57:54,384: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:57:54,384: WARNING/ForkPoolWorker-1]  50%|#####     | 1/2 [00:00<00:00,  5.85it/s]
+[2025-12-07 16:57:54,435: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:57:54,435: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00,  8.99it/s]
+[2025-12-07 16:57:54,436: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:57:54,436: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 42153.81it/s]
+[2025-12-07 16:57:54,436: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 16:57:54,437: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 16:57:54,437: WARNING/ForkPoolWorker-1] 2it [00:00, 28244.47it/s]
+[2025-12-07 16:57:54,437: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 16:57:54,667: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:57:54,667: WARNING/ForkPoolWorker-1]  50%|#####     | 1/2 [00:00<00:00,  4.36it/s]
+[2025-12-07 16:57:54,839: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 16:57:54,839: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00,  5.10it/s]
+[2025-12-07 16:57:54,840: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00,  4.97it/s]
+[2025-12-07 16:57:54,840: WARNING/ForkPoolWorker-1] 
+[LEARNER] (WARNING)	OBSERVATION TABLE
+[2025-12-07 16:57:54,840: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 16:57:54,840: WARNING/ForkPoolWorker-1]   0%|          | 0/4 [00:00<?, ?it/s]
+[2025-12-07 16:57:54,841: WARNING/ForkPoolWorker-1] 100%|##########| 4/4 [00:00<00:00, 84733.41it/s]
+[2025-12-07 16:57:54,841: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 16:57:55,165: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[a54495ce-667b-467b-96a4-997b28c1f635] succeeded in 0.9695007300178986s: {'status': 'Success', 'report_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.txt', 'plot_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.pdf', 'message': 'Learning complete.'}
+[2025-12-07 17:03:00,559: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2025-12-07 17:03:00,562: INFO/MainProcess] mingle: searching for neighbors
+[2025-12-07 17:03:01,578: WARNING/MainProcess] /home/rghaf/miniforge3/envs/lsha-web/lib/python3.10/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@Rghaf.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
+
+[2025-12-07 17:03:01,579: INFO/MainProcess] mingle: all alone
+[2025-12-07 17:03:01,625: INFO/MainProcess] celery@Rghaf ready.
+[2025-12-07 17:03:06,094: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[265f56f5-ab9d-451b-8f81-6c0312706193] received
+[2025-12-07 17:03:06,101: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:03:06,102: WARNING/ForkPoolWorker-1] 2it [00:00, 19463.13it/s]
+[2025-12-07 17:03:06,102: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:06,154: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:06,223: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:06,223: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 16.51it/s]
+[2025-12-07 17:03:06,224: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 16.47it/s]
+[2025-12-07 17:03:06,224: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:06,225: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 34807.50it/s]
+[2025-12-07 17:03:06,225: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (ERROR)	Task Crashed: max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    else:
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+[2025-12-07 17:03:06,226: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[265f56f5-ab9d-451b-8f81-6c0312706193] succeeded in 0.12952218498685397s: {'status': 'Error', 'message': 'max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    else:
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+'}
+[2025-12-07 17:03:21,601: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[16c34a61-aeb5-4230-80ba-1c725840ddb6] received
+[2025-12-07 17:03:21,606: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:03:21,606: WARNING/ForkPoolWorker-1] 2it [00:00, 30283.78it/s]
+[2025-12-07 17:03:21,607: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:21,655: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:21,703: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:21,704: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 20.69it/s]
+[2025-12-07 17:03:21,704: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:21,704: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 32640.50it/s]
+[2025-12-07 17:03:21,705: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:03:21,705: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:03:21,705: WARNING/ForkPoolWorker-1] 2it [00:00, 27503.63it/s]
+[2025-12-07 17:03:21,705: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:21,755: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:21,807: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:21,807: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 19.75it/s]
+[2025-12-07 17:03:21,807: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 19.65it/s]
+[2025-12-07 17:03:21,808: WARNING/ForkPoolWorker-1] 
+[LEARNER] (WARNING)	OBSERVATION TABLE
+[2025-12-07 17:03:21,808: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:03:21,808: WARNING/ForkPoolWorker-1]   0%|          | 0/4 [00:00<?, ?it/s]
+[2025-12-07 17:03:21,809: WARNING/ForkPoolWorker-1] 100%|##########| 4/4 [00:00<00:00, 28197.00it/s]
+[2025-12-07 17:03:21,809: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:03:21,811: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[16c34a61-aeb5-4230-80ba-1c725840ddb6] succeeded in 0.2084704110166058s: {'status': 'Success', 'report_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.txt', 'plot_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.pdf', 'message': 'Learning complete.'}
+[2025-12-07 17:03:32,632: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[6d859e57-57ac-4d08-9b70-a1493f7d7198] received
+[2025-12-07 17:03:32,636: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:03:32,636: WARNING/ForkPoolWorker-1] 2it [00:00, 29537.35it/s]
+[2025-12-07 17:03:32,637: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:32,696: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:32,745: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:32,745: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 18.55it/s]
+[2025-12-07 17:03:32,745: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 18.49it/s]
+[2025-12-07 17:03:32,746: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:32,746: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 43464.29it/s]
+[2025-12-07 17:03:32,746: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:03:32,746: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:03:32,746: WARNING/ForkPoolWorker-1] 2it [00:00, 27503.63it/s]
+[2025-12-07 17:03:32,747: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:03:32,798: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:32,849: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:03:32,850: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 19.47it/s]
+[2025-12-07 17:03:32,850: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 19.41it/s]
+[2025-12-07 17:03:32,850: WARNING/ForkPoolWorker-1] 
+[LEARNER] (WARNING)	OBSERVATION TABLE
+[2025-12-07 17:03:32,850: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:03:32,851: WARNING/ForkPoolWorker-1]   0%|          | 0/4 [00:00<?, ?it/s]
+[2025-12-07 17:03:32,851: WARNING/ForkPoolWorker-1] 100%|##########| 4/4 [00:00<00:00, 72628.64it/s]
+[2025-12-07 17:03:32,851: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:03:32,853: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[6d859e57-57ac-4d08-9b70-a1493f7d7198] succeeded in 0.2209177449985873s: {'status': 'Success', 'report_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.txt', 'plot_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.pdf', 'message': 'Learning complete.'}
+[2025-12-07 17:05:42,121: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2025-12-07 17:05:42,124: INFO/MainProcess] mingle: searching for neighbors
+[2025-12-07 17:05:43,142: WARNING/MainProcess] /home/rghaf/miniforge3/envs/lsha-web/lib/python3.10/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@Rghaf.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
+
+[2025-12-07 17:05:43,142: INFO/MainProcess] mingle: all alone
+[2025-12-07 17:05:43,161: INFO/MainProcess] celery@Rghaf ready.
+[2025-12-07 17:05:47,376: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[ca208d70-64a4-43a8-b5b3-1de8631195c3] received
+[2025-12-07 17:05:47,399: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (INFO)	Starting Task: Reza (ID: 1)
+[2025-12-07 17:05:47,399: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (INFO)	DEBUG: Task Idempotency Key (CaseStudy ID): 1
+[2025-12-07 17:05:47,402: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (INFO)	Detected UPPAAL input variable: force_open
+[2025-12-07 17:05:47,403: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (INFO)	Starting Learning Loop...
+[2025-12-07 17:05:47,403: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Performing ref query...
+[2025-12-07 17:05:47,406: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:05:47,406: WARNING/ForkPoolWorker-1] 2it [00:00, 20068.44it/s]
+[2025-12-07 17:05:47,406: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:05:47,407: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Requesting new traces for h_1
+[2025-12-07 17:05:47,408: WARNING/ForkPoolWorker-1] 
+[DYN_TRACE_GEN] (INFO)	DEBUG: Converting events: ['h_1']
+[2025-12-07 17:05:47,470: WARNING/ForkPoolWorker-1] DEBUG: Trace file not found: /home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/upp_results/{}.txt
+[2025-12-07 17:05:47,470: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:05:47,471: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Requesting new traces for h_0
+[2025-12-07 17:05:47,472: WARNING/ForkPoolWorker-1] 
+[DYN_TRACE_GEN] (INFO)	DEBUG: Converting events: ['h_0']
+[2025-12-07 17:05:47,552: WARNING/ForkPoolWorker-1] DEBUG: Trace file not found: /home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/upp_results/{}.txt
+[2025-12-07 17:05:47,553: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:05:47,553: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 13.68it/s]
+[2025-12-07 17:05:47,553: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 13.63it/s]
+[2025-12-07 17:05:47,554: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Looking for counterexample...
+[2025-12-07 17:05:47,554: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:05:47,554: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 43690.67it/s]
+[2025-12-07 17:05:47,555: WARNING/ForkPoolWorker-1] 
+[LEARNER] (INFO)	OBSERVATION TABLE
+[2025-12-07 17:05:47,555: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:05:47,555: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Performing ref query...
+[2025-12-07 17:05:47,556: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:05:47,556: WARNING/ForkPoolWorker-1] 2it [00:00, 12282.00it/s]
+[2025-12-07 17:05:47,556: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:05:47,556: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Requesting new traces for h_1
+[2025-12-07 17:05:47,557: WARNING/ForkPoolWorker-1] 
+[DYN_TRACE_GEN] (INFO)	DEBUG: Converting events: ['h_1']
+[2025-12-07 17:05:47,616: WARNING/ForkPoolWorker-1] DEBUG: Trace file not found: /home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/upp_results/{}.txt
+[2025-12-07 17:05:47,616: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:05:47,616: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Requesting new traces for h_0
+[2025-12-07 17:05:47,617: WARNING/ForkPoolWorker-1] 
+[DYN_TRACE_GEN] (INFO)	DEBUG: Converting events: ['h_0']
+[2025-12-07 17:05:47,843: WARNING/ForkPoolWorker-1] DEBUG: Trace file not found: /home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/upp_results/{}.txt
+[2025-12-07 17:05:47,844: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_1] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:05:47,844: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00,  6.96it/s]
+[2025-12-07 17:05:47,844: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00,  6.96it/s]
+[2025-12-07 17:05:47,844: WARNING/ForkPoolWorker-1] 
+[LEARNER] (WARNING)	OBSERVATION TABLE
+[2025-12-07 17:05:47,844: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:05:47,844: WARNING/ForkPoolWorker-1] 
+[TEACHER] (INFO)	Looking for counterexample...
+[2025-12-07 17:05:47,845: WARNING/ForkPoolWorker-1]   0%|          | 0/4 [00:00<?, ?it/s]
+[2025-12-07 17:05:47,845: WARNING/ForkPoolWorker-1] 100%|##########| 4/4 [00:00<00:00, 36002.61it/s]
+[2025-12-07 17:05:47,845: WARNING/ForkPoolWorker-1] 
+[LEARNER] (INFO)	FINAL OBSERVATION TABLE
+[2025-12-07 17:05:47,845: WARNING/ForkPoolWorker-1] 
+[Obs.Table Handler] (WARNING)	Observation Table (Empty)
+[2025-12-07 17:05:47,845: WARNING/ForkPoolWorker-1] 
+[LEARNER] (INFO)	BUILDING HYP. AUTOMATON...
+[2025-12-07 17:05:47,850: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[ca208d70-64a4-43a8-b5b3-1de8631195c3] succeeded in 0.47317134198965505s: {'status': 'Success', 'report_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.txt', 'plot_path': '/home/rghaf/Projects/lsha_web/core_algorithm/lsha/resources/learned_sha/Reza_1.pdf', 'message': 'Learning complete.'}
+[2025-12-07 17:07:19,737: INFO/MainProcess] Task core_algorithm.tasks.run_lsha_learning_task[0a591792-ccc0-41d0-b5bf-dcf291464589] received
+[2025-12-07 17:07:19,765: WARNING/ForkPoolWorker-1] 0it [00:00, ?it/s]
+[2025-12-07 17:07:19,766: WARNING/ForkPoolWorker-1] 2it [00:00, 21236.98it/s]
+[2025-12-07 17:07:19,766: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:07:19,913: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_35] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:07:19,914: WARNING/ForkPoolWorker-1]  50%|#####     | 1/2 [00:00<00:00,  6.81it/s]
+[2025-12-07 17:07:19,984: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_35] (WARNING)	Empty signal points for driver: t.ON
+[2025-12-07 17:07:19,984: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00,  9.19it/s]
+[2025-12-07 17:07:19,985: WARNING/ForkPoolWorker-1]   0%|          | 0/2 [00:00<?, ?it/s]
+[2025-12-07 17:07:19,986: WARNING/ForkPoolWorker-1] 100%|##########| 2/2 [00:00<00:00, 23497.50it/s]
+[2025-12-07 17:07:19,987: WARNING/ForkPoolWorker-1] 
+[LSHA_TASK_35] (ERROR)	Task Crashed: max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    else:
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+[2025-12-07 17:07:19,988: INFO/ForkPoolWorker-1] Task core_algorithm.tasks.run_lsha_learning_task[0a591792-ccc0-41d0-b5bf-dcf291464589] succeeded in 0.2291163449990563s: {'status': 'Error', 'message': 'max() arg is an empty sequence
+Traceback (most recent call last):
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py", line 223, in run_lsha_learning_task
+    else:
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/learning_setup/learner.py", line 262, in run_lsha
+    self.obs_table.print(filter_empty)
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 115, in print
+    LOGGER.warn(self.__str__(filter_empty))
+  File "/home/rghaf/Projects/lsha_web/core_algorithm/lsha/sha_learning/domain/obstable.py", line 83, in __str__
+    max_tabs = max(
+ValueError: max() arg is an empty sequence
+'}
