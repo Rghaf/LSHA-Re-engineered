@@ -16,6 +16,7 @@ class CaseStudy(models.Model):
     context_variables = models.JSONField(null=True, blank=True, default=list)
     user_json = models.JSONField(null=True, blank=True)
     noise = models.FloatField(default=0.0)
+    n_min = models.IntegerField(null = True, blank = True, default = 10)
     p_value = models.FloatField(default=0.05)
     mi_query = models.BooleanField(default=False)
     plot_ddtw = models.BooleanField(default=False)
@@ -23,6 +24,7 @@ class CaseStudy(models.Model):
     ht_query_type = models.CharField(max_length=100, null=True, blank=True)
     eq_condition = models.CharField(max_length=100, null=True, blank=True)
     is_stochastic = models.BooleanField(default=False)
+    is_aggregation = models.BooleanField(null = True, blank = True, default = False)
 
     def __str__(self):
         # If name exists, return it. If not, return a placeholder with the ID.

@@ -45,8 +45,12 @@ def run_lsha_learning_task(case_study_id):
         logging.basicConfig(level=logging.INFO)
         LOGGER = logging.getLogger(f'LSHA_TASK_{case_study_id}')
 
-    try:
+        # ==============================================
         # 1. Fetch Data
+        # In this section we get the Case Study from the django model and
+        # make the data ready to use in the code
+        # ==============================================
+    try:
         try:
             cs_instance = CaseStudy.objects.get(id=case_study_id)
         except CaseStudy.DoesNotExist:
@@ -54,7 +58,12 @@ def run_lsha_learning_task(case_study_id):
 
         LOGGER.info(f"Starting Task: {cs_instance.name} (ID: {case_study_id})")
 
-        # 2. Define Paths
+        # ===============================================
+        # Define Paths
+        # This paths should be based on the actual paths where you have installed
+        # UPPAAL, and where you want save the results come from the UPPAAL on the
+        # machine which is going to run the Code.
+        # ===============================================
         UPPAAL_BIN = "/opt/uppaal/lib/app/bin/verifyta"
         if not os.path.exists(UPPAAL_BIN):
              UPPAAL_BIN = "/usr/bin/verifyta" 
@@ -62,7 +71,7 @@ def run_lsha_learning_task(case_study_id):
         OUTPUT_DIR = "/home/rghaf/Projects/lsha_web/results/upp_results"
         os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-        # 3. Parse JSON & Variables
+        
         DRIVER_SIGNAL = cs_instance.driver_signal
         MAIN_VARIABLE = cs_instance.main_variable
         CONTEXT_VARIABLES = cs_instance.context_variables
@@ -72,7 +81,11 @@ def run_lsha_learning_task(case_study_id):
         
         json_data_str = cs_instance.user_json
         data_dict = json.loads(json_data_str)
-        
+
+        # ===============================================
+        # Parse JSON & Variables
+        # Here we extrace the variables from the JSON field which is filled by the user.
+        # ===============================================
         events = data_dict.get('events', [])
         real_events = []
         for e in events:
@@ -89,6 +102,12 @@ def run_lsha_learning_task(case_study_id):
         print("PHASE 1: CUSTOM TRACE GENERATOR TEST")
         print("="*40)
 
+
+        # ===============================================
+        # Run the Custom Trace Generator
+        # In this section we initialize the CustomTraceGenerator that implemented instead of
+        # the original TraceGenerator by sending the required parameters.
+        # ===============================================
         try:
             custom_tg = CustomTraceGenerator(
                 cs_name=cs_instance.name,
@@ -118,6 +137,14 @@ def run_lsha_learning_task(case_study_id):
         # ---------------------------------------------------------
         # PHASE 2: SUL FUNCTIONS TEST
         # ---------------------------------------------------------
+
+        # ===============================================
+        # Test SUL functions
+        # In this section, we define the parameters required for the SUL functions
+        # and we test if data is correct and all functions of our new dynamic sul
+        # which is a dynamic version of the old sul_functions is working correctly
+        # or not.
+        # ===============================================
         sul_args = {
             'name': cs_instance.name,
             'default_m': 0, 
@@ -177,8 +204,13 @@ def run_lsha_learning_task(case_study_id):
             print("\n[SKIP] Phase 2 Skipped (No File).")
 
        # ---------------------------------------------------------
-        # PHASE 2.5: BUILD LSHA SUL OBJECTS
+        # PHASE 3: BUILD LSHA SUL OBJECTS
         # ---------------------------------------------------------
+                # ===============================================
+        # Test SUL functions
+        # In this section, based on the user input in the JSON field, we build the
+        # SUL objects which are required to run the algorithm.
+        # ===============================================
         flows = []
         m2d = {}
         
@@ -315,18 +347,17 @@ def run_lsha_learning_task(case_study_id):
             'ht_query_type': getattr(cs_instance, 'ht_query_type', 'D'),
             'eq_condition': getattr(cs_instance, 'eq_condition', 's'),
             'is_stochastic': getattr(cs_instance, 'is_stochastic', False),
-            'n_min': 10,
-            'allowUnobservedEvents': False
-        }
+            'n_min': getattr(cs_instance, 'n_min', 10),
+            'is_aggregation': getattr(cs_instance, 'is_aggregation', False)
+            }
 
         LOGGER.info("Passing config to CustomTeacher...")
         
         teacher = CustomTeacher(
             sul=sul,
-            config_data=teacher_config
+            config_data=teacher_config,
+            trace_generator=custom_tg
         )
-
-        teacher.TG = custom_tg
 
         # ---------------------------------------------------------
         # PHASE 4: RUNNING THE L* LEARNING ALGORITHM
@@ -365,7 +396,7 @@ def run_lsha_learning_task(case_study_id):
             SHA_NAME = f"{clean_name}_{cs_instance.resample_strategy}"
 
             # Generate Graphviz plot (view=False for server environments)
-            graphviz_sha = ha_pltr.to_graphviz(learned_ha, SHA_NAME, FINAL_OUT_DIR + "/", view=False)
+            graphviz_sha = ha_pltr.to_graphviz(learned_ha, SHA_NAME, FINAL_OUT_DIR + "/", view=True)
 
             # Save SHA source to .txt file
             txt_path = os.path.join(FINAL_OUT_DIR, f"{SHA_NAME}_source.txt")
