@@ -23,8 +23,9 @@ class CaseStudy(models.Model):
     ht_query = models.BooleanField(default=False)
     ht_query_type = models.CharField(max_length=100, null=True, blank=True)
     eq_condition = models.CharField(max_length=100, null=True, blank=True)
-    is_stochastic = models.BooleanField(default=False)
     is_aggregation = models.BooleanField(null = True, blank = True, default = False)
+    final_result_txt = models.FileField(upload_to='results/final_results', null=True, blank=True)
+    final_result_pdf = models.FileField(upload_to='results/final_results', null=True, blank=True)
 
     def __str__(self):
         # If name exists, return it. If not, return a placeholder with the ID.

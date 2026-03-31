@@ -6,6 +6,7 @@ import numpy as np
 from functools import partial
 from celery import shared_task
 from django.conf import settings
+from django.core.files import File
 from datetime import datetime
 
 # --- Path Setup ---
@@ -346,7 +347,6 @@ def run_lsha_learning_task(case_study_id):
             'ht_query': getattr(cs_instance, 'ht_query', False),
             'ht_query_type': getattr(cs_instance, 'ht_query_type', 'D'),
             'eq_condition': getattr(cs_instance, 'eq_condition', 's'),
-            'is_stochastic': getattr(cs_instance, 'is_stochastic', False),
             'n_min': getattr(cs_instance, 'n_min', 10),
             'is_aggregation': getattr(cs_instance, 'is_aggregation', False)
             }
@@ -388,26 +388,52 @@ def run_lsha_learning_task(case_study_id):
             LOGGER.info("Saving results and generating Graphviz plots...")
             
             # Create a dedicated directory for the final outputs
-            FINAL_OUT_DIR = os.path.join(settings.BASE_DIR, "results", "lsha_models")
+            FINAL_OUT_DIR = os.path.join(settings.BASE_DIR, "results", "final_results")
             os.makedirs(FINAL_OUT_DIR, exist_ok=True)
 
-            # Clean name for the outputs (e.g., "THERMO_V10_UPPAAL")
             clean_name = cs_instance.name.replace(" ", "_")
             SHA_NAME = f"{clean_name}_{cs_instance.resample_strategy}"
 
-            # Generate Graphviz plot (view=False for server environments)
+            # Generate Graphviz plot (Set view=False so it doesn't try to open a PDF viewer on your server!)
             graphviz_sha = ha_pltr.to_graphviz(learned_ha, SHA_NAME, FINAL_OUT_DIR + "/", view=True)
 
-            # Save SHA source to .txt file
+            # 1. Define the EXACT string paths on the hard drive
+            pdf_path = os.path.join(FINAL_OUT_DIR, f"{SHA_NAME}.pdf")
+            
+            # (Graphviz sometimes appends .gv.pdf depending on the version, this fallback catches both!)
+            if not os.path.exists(pdf_path):
+                pdf_path = os.path.join(FINAL_OUT_DIR, f"{SHA_NAME}.gv.pdf") 
+
             txt_path = os.path.join(FINAL_OUT_DIR, f"{SHA_NAME}_source.txt")
+
+            # Save SHA source to .txt file
             with open(txt_path, 'w') as f:
                 f.write(graphviz_sha.source)
             LOGGER.info(f"Graphviz source saved to: {txt_path}")
 
+            # 2. Refresh the DB instance so we don't overwrite fresh data!
+            cs_instance = CaseStudy.objects.get(id=case_study_id) 
+
+            # 3. Save the Graphviz PDF using the STRING PATH
+            if os.path.exists(pdf_path):
+                with open(pdf_path, 'rb') as f:
+                    cs_instance.final_result_pdf.save(f"{SHA_NAME}_automaton.pdf", File(f), save=False)
+            else:
+                LOGGER.error(f"CRITICAL: PDF not found at {pdf_path}")
+
+            # 4. Save the Text Source file
+            if os.path.exists(txt_path):
+                with open(txt_path, 'rb') as f:
+                    cs_instance.final_result_txt.save(f"{SHA_NAME}_source.txt", File(f), save=False)
+            else:
+                LOGGER.error(f"CRITICAL: TXT not found at {txt_path}")
+
+            # 5. Mark as completed and permanently save the database row!
+            cs_instance.status = 'COMPLETED'
+            cs_instance.save()
+
             # Plot distribution history if stochastic
-            if teacher.is_stochastic and teacher.ht_query_type == 'S':
-                # Original distr_hist may require save_path kwarg or rely on hardcoded paths,
-                # make sure to adjust it if it complains about positional arguments!
+            if teacher.ht_query_type == 'S':
                 try:
                     distr_hist(teacher.hist, SHA_NAME) 
                 except Exception as e:

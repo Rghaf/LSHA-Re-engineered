@@ -30,7 +30,7 @@ bool force_exe = true;
 int curr = 0;
 int force_open[MAX_E] = {0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
-const int TAU = 200;
+const int TAU = 250;
 const int R = 10;
 </declaration>
 	<template>

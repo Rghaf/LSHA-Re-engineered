@@ -59,7 +59,6 @@ class CustomTeacher:
         self.ht_query_flag = self.config.get('ht_query', False)
         self.ht_query_type = self.config.get('ht_query_type', 'D')
         self.eq_condition = str(self.config.get('eq_condition', 's')).lower()
-        self.is_stochastic = self.config.get('is_stochastic', False)
         self.n_min = int(self.config.get('n_min', 10))
         self.is_aggregation = self.config.get('is_aggregation', False)
 
@@ -73,7 +72,6 @@ class CustomTeacher:
         LOGGER.info(f"  HT Query        : {self.ht_query_flag}")
         LOGGER.info(f"  HT Query Type   : {self.ht_query_type}")
         LOGGER.info(f"  Eq Condition    : {self.eq_condition}")
-        LOGGER.info(f"  Is Stochastic   : {self.is_stochastic}")
         LOGGER.info(f"  N Min (Refine)  : {self.n_min}")
         LOGGER.info("========================================")
 
@@ -127,12 +125,20 @@ class CustomTeacher:
         else:
             segments = self.sul.get_segments(word)
             if len(segments) > 0:
-                if len(self.flows[0]) == 1:
+            #     if len(self.flows[0]) == 1:
+            #         return self.flows[0][0]
+            #     if not self.is_aggregation:
+            #         return self.flows[0][2]
+
+                last_symbol = word.events[-1].symbol if hasattr(word, 'events') else word[-1].symbol
+                
+                # If heater turned OFF, return Model 0 (Cooling)
+                if last_symbol == 'h_0':
                     return self.flows[0][0]
-                # if CS == 'THERMO' and word[-1].symbol == 'h_0':
-                #     return self.flows[0][2]
-                if not self.is_aggregation:
-                    return self.flows[0][2]
+                
+                # If heater turned ON, return Model 1 (Heating)
+                elif last_symbol == 'h_1':
+                    return self.flows[0][1]
 
                 fits = []
                 for segment in segments:
@@ -276,13 +282,10 @@ class CustomTeacher:
                     if len(self.hist[distr]) == 0 or len(metrics) == 0:
                         continue
 
-                    # =============================================
-                    # Comment out the part related to the case study name, specifically for THERMO, since it is not relevant for the general implementation and can cause confusion.
                     if not self.is_aggregation:
                         v1 = metrics
                         noise1 = [0] * len(v1)
                     else:
-                    # =============================================
                         v1 = [avg_metrics] * 50
 
                     # NOISE changed to self.noise which comes from UI input by the user 
@@ -292,14 +295,11 @@ class CustomTeacher:
 
                     v2 = []
 
-                    # =============================================
-                    # Comment out the part related to the case study name, specifically for THERMO, since it is not relevant for the general implementation and can cause confusion.
                     if self.is_aggregation:
                         v2 = self.hist[distr]
                         noise2 = [0] * len(v2)
                     else:
 
-                    # =============================================
                         for m in self.hist[distr]:
                             v2 += [m] * 10
 
