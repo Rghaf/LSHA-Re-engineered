@@ -125,20 +125,8 @@ class CustomTeacher:
         else:
             segments = self.sul.get_segments(word)
             if len(segments) > 0:
-            #     if len(self.flows[0]) == 1:
-            #         return self.flows[0][0]
-            #     if not self.is_aggregation:
-            #         return self.flows[0][2]
-
-                last_symbol = word.events[-1].symbol if hasattr(word, 'events') else word[-1].symbol
-                
-                # If heater turned OFF, return Model 0 (Cooling)
-                if last_symbol == 'h_0':
+                if len(self.flows[0]) == 1:
                     return self.flows[0][0]
-                
-                # If heater turned ON, return Model 1 (Heating)
-                elif last_symbol == 'h_1':
-                    return self.flows[0][1]
 
                 fits = []
                 for segment in segments:
@@ -281,15 +269,15 @@ class CustomTeacher:
                 for distr in self.hist:
                     if len(self.hist[distr]) == 0 or len(metrics) == 0:
                         continue
-
+                    # change is aggregation to need to fill out
                     if not self.is_aggregation:
                         v1 = metrics
                         noise1 = [0] * len(v1)
                     else:
                         v1 = [avg_metrics] * 50
 
-                    # NOISE changed to self.noise which comes from UI input by the user 
-                    noise1 = np.random.normal(0.0, self.noise, size=len(v1))
+                        # NOISE changed to self.noise which comes from UI input by the user 
+                        noise1 = np.random.normal(0.0, self.noise, size=len(v1))
 
                     v1 = [x + noise1[i] for i, x in enumerate(v1)]
 
@@ -303,8 +291,8 @@ class CustomTeacher:
                         for m in self.hist[distr]:
                             v2 += [m] * 10
 
-                    # NOISE changed to self.noise which comes from UI input by the user 
-                    noise2 = np.random.normal(0.0, self.noise, size=len(v2))
+                        # NOISE changed to self.noise which comes from UI input by the user 
+                        noise2 = np.random.normal(0.0, self.noise, size=len(v2))
                     v2 = [x + noise2[i] for i, x in enumerate(v2)]
 
                     # P_VALUE => self.p_value
