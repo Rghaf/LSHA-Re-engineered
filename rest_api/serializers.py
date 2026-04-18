@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CaseStudy
+from .models import CaseStudy, CsvFile
 
 class CaseStudySerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,6 +13,13 @@ class CaseStudySerializer(serializers.ModelSerializer):
             data = data.copy()
             data['context_variables'] = []
         return super().to_internal_value(data)
+
+class CsvFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CsvFile
+        fields = '__all__'
+        read_only_fields = ['id']
+
 
 # class EventsSerializer(serializers.ModelSerializer):
 #     class Meta:

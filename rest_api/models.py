@@ -9,7 +9,7 @@ class CaseStudy(models.Model):
     resample_strategy = models.CharField(max_length=100, default='UPPAAL')
     uppaal_model_file = models.FileField(upload_to='uploads/uppaal/models', null=True, blank=True)
     uppaal_query_file = models.FileField(upload_to='uploads/uppaal/queries', null=True, blank=True)
-    csv_file = models.FileField(upload_to='uploads/csv/files', null=True, blank=True)
+    # csv_file = models.FileField(upload_to='uploads/csv/files', null=True, blank=True)
     driver_signal = models.JSONField(default=list, null=True, blank=True)
     # uppaal_query = models.JSONField(null=True, blank=True, default=dict)
     main_variable = models.CharField(max_length=100, null=True, blank=True, default='')
@@ -32,4 +32,13 @@ class CaseStudy(models.Model):
         if self.name:
             return self.name
         return f"Unnamed List (ID: {self.id})"
+
+class CsvFile(models.Model):
+    id = models.AutoField(primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    file = models.FileField(upload_to='uploads/csv/files')
+    case_study = models.ForeignKey(CaseStudy, on_delete=models.CASCADE, related_name='csv_files')
+
+    def __str__(self):
+        return f"CSV file {self.id} for case study {self.case_study.name} - {self.case_study.id}"
 
