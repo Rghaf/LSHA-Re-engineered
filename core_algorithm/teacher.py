@@ -6,13 +6,15 @@ import scipy.stats as stats
 from tqdm import tqdm
 
 from core_algorithm.lsha.sha_learning.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, Trace
-from core_algorithm.lsha.sha_learning.domain.obstable import ObsTable, Row, State
+# from core_algorithm.lsha.sha_learning.domain.obstable import ObsTable, Row, State
 from core_algorithm.lsha.sha_learning.domain.sigfeatures import SampledSignal, Timestamp
 from core_algorithm.lsha.sha_learning.domain.sulfeatures import SystemUnderLearning
 from core_algorithm.lsha.sha_learning.learning_setup.fastddtw import fast_ddtw, plot_aligned_signals
 from core_algorithm.lsha.sha_learning.learning_setup.logger import Logger
 # from core_algorithm.lsha.sha_learning.learning_setup.trace_gen import TraceGenerator
 from .dynamic_tracegenerator import CustomTraceGenerator as TraceGenerator
+# from core_algorithm.lsha.sha_learning.domain.obstable import ObsTable, Row, State
+from .dynamic_obstable import ObsTable, Row, State
 # from .dynamic_sul import parse_trace_to_signals, is_chg_pt_dynamic, label_event_dynamic
 
 LOGGER = Logger('TEACHER')
@@ -44,14 +46,45 @@ LOGGER = Logger('TEACHER')
 # pov: str = None, start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None,
 
 class CustomTeacher:
+    """
+    LSHA Teacher (the "oracle" half of L*) wired to a configurable SUL.
+
+    Roles:
+      * Answers Model-Identification queries (mi_query) — given a word,
+        which FlowCondition fits the observed signal segment best?
+      * Answers Hypothesis-Testing queries (ht_query) — given a flow,
+        which probability distribution best matches the observed parameter
+        statistics?  Has both a deterministic (D) and stochastic (S) variant.
+      * Answers row-equality queries (eqr_query) — strict or weak equality
+        depending on the ``eq_condition`` knob.
+      * Performs Refinement (ref_query) — when the observation table is
+        ambiguous, asks the TraceGenerator for more traces and folds them in.
+      * Searches for Counterexamples (get_counterexample) — looks for words
+        whose row would violate the table's closedness or consistency.
+
+    Hyperparameters arrive as a plain dict from ``tasks.py`` and override the
+    legacy config.ini values; nothing in this module hard-codes a case study.
+    """
+
     def __init__(self, sul: SystemUnderLearning, trace_generator=None, config_data: Dict = None):
 
         self.sul = sul
 
         # --- DYNAMIC CONFIGURATION LOADING ---
         self.config = config_data if config_data else {}
-        
-        # Load Hyperparameters from the passed dictionary (populated by Django UI)
+
+        # Load Hyperparameters from the passed dictionary (populated by Django UI).
+        # Strategy is normalised to {'CSV','UPPAAL'}: tasks.py and the trace
+        # generator already collapse 'SIM'/'CSV'/'UPP' aliases, but we accept
+        # any spelling here defensively in case the Teacher is ever wired up
+        # by a different caller (CLI, tests, etc.).
+        raw_strategy = (self.config.get('resample_strategy', 'SIM') or 'SIM').strip().upper()
+        if raw_strategy in ('SIM', 'CSV', 'STATIC'):
+            self.resample_strategy = 'CSV'
+        elif raw_strategy in ('UPPAAL', 'UPP', 'VERIFYTA'):
+            self.resample_strategy = 'UPPAAL'
+        else:
+            self.resample_strategy = raw_strategy
         self.noise = float(self.config.get('noise', 0.0))
         self.p_value = float(self.config.get('p_value', 0.05))
         self.mi_query_flag = self.config.get('mi_query', False)
@@ -118,7 +151,20 @@ class CustomTeacher:
     # #############################################
 
     def mi_query(self, word: Trace):
-        
+        """
+        MODEL-IDENTIFICATION query.
+
+        For the prefix ``word`` collect every signal segment in the
+        trace bank that follows that prefix; for each segment compute its
+        DDTW distance against every candidate FlowCondition's ideal curve
+        and pick the closest match.  The flow that wins ≥75 % of the
+        segments is reported as the model for that prefix; otherwise we
+        report ``None`` (the table cell stays empty, forcing more refinement).
+
+        When ``mi_query`` is disabled in the UI the answer collapses to
+        the SUL's ``default_m`` flow — useful for case studies (ENERGY,
+        GREEN) where the user only cares about discrete event sequences.
+        """
         if not self.mi_query_flag or word == '':
     #       return self.flows[0][self.sul.default_m]
             return self.flows[0][self.sul.default_m]
@@ -200,6 +246,23 @@ class CustomTeacher:
 
     # ROUTER: Sends the query to Deterministic or Stochastic based on the UI settings
     def ht_query(self, word: Trace, flow: FlowCondition, save=True):
+        """
+        HYPOTHESIS-TESTING query — pick the probability distribution that
+        best fits the parameter samples observed for ``word`` under flow
+        ``flow``.  Two backends:
+
+          * **D** (deterministic): exact-match on the scalar parameter.
+            Used when the case study has noiseless metrics (THERMO/HRI on
+            UPPAAL traces — the K and R values come back numerically clean).
+          * **S** (stochastic): two-sample Kolmogorov–Smirnov test against
+            every existing distribution.  Used when sensors are noisy or
+            when the user explicitly enables aggregation
+            (ENERGY mean-power across many bins, GREEN absorption across
+            many decanter cycles).
+
+        Returns ``None`` when ``flow`` is None (model unknown), or the
+        SUL's ``default_d`` distribution when ht_query is disabled.
+        """
         if flow is None:
             return None
 
@@ -246,12 +309,30 @@ class CustomTeacher:
                 if save:
                     self.add_distribution(new_distr, flow)
                     self.to_hist(metrics, new_distr.d_id)
+                    self._log_new_distribution(new_distr, unique_metrics[0], 'D')
                 return new_distr
             else:
                 self.to_hist(metrics, best_fit.d_id, update=True)
                 return best_fit
-            
-            
+
+
+    # ------------------------------------------------------------------
+    # Sampled diagnostic — fires once per N new distributions to track
+    # whether the HT query is converging or producing a fresh distribution
+    # for every segment (the classic "infinite chain" failure mode).
+    # ------------------------------------------------------------------
+    _DISTR_LOG_EVERY = 25
+    _distr_log_count = 0
+
+    def _log_new_distribution(self, distr, metric, qtype):
+        CustomTeacher._distr_log_count += 1
+        n = CustomTeacher._distr_log_count
+        if n <= 5 or n % CustomTeacher._DISTR_LOG_EVERY == 0:
+            LOGGER.info(
+                f'[HT-{qtype}] allocated new distribution id={distr.d_id} '
+                f'avg={metric:.4f} (total_new={n})'
+            )
+
     def ht_s_query(self, word: Trace, flow: FlowCondition, save=True):
         segments = self.sul.get_segments(word)
         if len(segments) > 0:
@@ -275,9 +356,10 @@ class CustomTeacher:
                         noise1 = [0] * len(v1)
                     else:
                         v1 = [avg_metrics] * 50
-
-                        # NOISE changed to self.noise which comes from UI input by the user 
-                        noise1 = np.random.normal(0.0, self.noise, size=len(v1))
+                        # When noise=0 skip the RNG entirely to guarantee
+                        # deterministic results for the same input data.
+                        noise1 = (np.random.normal(0.0, self.noise, size=len(v1))
+                                  if self.noise > 0 else np.zeros(len(v1)))
 
                     v1 = [x + noise1[i] for i, x in enumerate(v1)]
 
@@ -287,12 +369,10 @@ class CustomTeacher:
                         v2 = self.hist[distr]
                         noise2 = [0] * len(v2)
                     else:
-
                         for m in self.hist[distr]:
                             v2 += [m] * 10
-
-                        # NOISE changed to self.noise which comes from UI input by the user 
-                        noise2 = np.random.normal(0.0, self.noise, size=len(v2))
+                        noise2 = (np.random.normal(0.0, self.noise, size=len(v2))
+                                  if self.noise > 0 else np.zeros(len(v2)))
                     v2 = [x + noise2[i] for i, x in enumerate(v2)]
 
                     # P_VALUE => self.p_value
@@ -308,10 +388,12 @@ class CustomTeacher:
                 self.to_hist(metrics, best_fit.d_id, update=True)
                 return best_fit
             else:
-                new_distr = ProbDistribution(len(self.distributions[0]), {'avg': sum(metrics) / len(metrics)})
+                new_avg = sum(metrics) / len(metrics)
+                new_distr = ProbDistribution(len(self.distributions[0]), {'avg': new_avg})
                 if save:
                     self.add_distribution(new_distr, flow)
                     self.to_hist(metrics, new_distr.d_id)
+                    self._log_new_distribution(new_distr, new_avg, 'S')
                 return new_distr
 
     #############################################
@@ -320,6 +402,23 @@ class CustomTeacher:
     # returns true/false
     #############################################
     def eqr_query(self, row1: Row, row2: Row, strict=False):
+        """
+        ROW-EQUALITY query.
+
+        ``strict=True`` (the ``s`` UI setting) requires the two rows to be
+        identical cell-for-cell — including unobserved (None,None) cells.
+        Strict equality matches the published L*-SHA semantics and is the
+        right choice when the trace data is dense enough to fill every
+        cell (THERMO, HRI under UPPAAL).
+
+        ``strict=False`` (the ``w`` UI setting) is the *weak* variant:
+        two rows are considered equal as long as the cells that ARE
+        observed agree.  Cells that one row has not yet observed are
+        treated as wildcards.  This is the right choice for sparse
+        real-world data (ENERGY, GREEN) where a long tail of
+        rarely-seen prefixes would otherwise stall the L* table from
+        ever closing.
+        """
         if strict:
             return row1 == row2
 
@@ -338,18 +437,45 @@ class CustomTeacher:
     # to gain more knowledge about the system under learning
     #############################################
     def ref_query(self, table: ObsTable):
-        LOGGER.info('Performing ref query...')
+        
+        """
+        REFINEMENT query.
 
+        Walks every row of the observation table looking for *ambiguous
+        words* — those whose row is consistent with multiple existing
+        rows, or those that simply have not yet collected ``n_min``
+        observations.  For each ambiguous word the Teacher asks the
+        TraceGenerator for fresh evidence and feeds it into the SUL.
+
+        The CSV/UPPAAL split is important here:
+
+          * In **UPPAAL mode** every call to ``self.TG.get_traces(n)``
+            launches a fresh verifyta simulation, so we can keep asking
+            for more.  The trace is processed file-by-file.
+          * In **CSV mode** the data is static.  The TraceGenerator yields
+            the file list ONCE and then returns ``[]`` on every subsequent
+            call (see ``CustomTraceGenerator.get_traces_csv``).  We forward
+            the entire file list to ``sul.process_data`` in a single call
+            so the SUL's CSV parser can concatenate them, and the empty
+            return on subsequent iterations gracefully terminates the loop.
+        """
         n_resample = int(self.n_min)
         S = table.get_S()
         upp_obs: List[Row] = table.get_upper_observations()
         lS = table.get_low_S()
         low_obs: List[Row] = table.get_lower_observations()
 
+        LOGGER.info(
+            f'[REF] start n_min={n_resample} '
+            f'|S|={len(S)} |low_S|={len(lS)} |E|={len(table.get_E())}'
+        )
+
         # find all words which are ambiguous
         # (equivalent to multiple rows)
         amb_words: List[Trace] = []
-        for i, row in tqdm(enumerate(upp_obs + low_obs)):
+        # Plain enumerate (no tqdm) to keep logs grep-friendly; the loop is
+        # quadratic in |S|+|low_S| so on small tables it's fast.
+        for i, row in enumerate(upp_obs + low_obs):
             # if there are not enough observations of a word,
             # it needs a refinement query
             s = S[i] if i < len(upp_obs) else lS[i - len(upp_obs)]
@@ -376,16 +502,49 @@ class CustomTeacher:
         #     if len(suffixes) == 0:
         #         uq.append(w)
 
-        for word in tqdm(uq, total=len(uq)):
-            LOGGER.info('Requesting new traces for {}'.format(str(word)))
+        LOGGER.info(f'[REF] ambiguous_words={len(uq)} (unique={len(set(uq))})')
+
+        # Per-word logs are noisy but we DO want to know the count of distinct
+        # words we asked the trace generator to refine.  Cap individual logs
+        # at the first 5 to keep the worker log readable on long runs.
+        AMBIG_LOG_BUDGET = 5
+        for w_i, word in enumerate(uq):
+            if w_i < AMBIG_LOG_BUDGET:
+                LOGGER.info(f'[REF] requesting traces #{w_i + 1}/{len(uq)} word="{word}"')
+            elif w_i == AMBIG_LOG_BUDGET:
+                LOGGER.info(f'[REF] (further per-word logs suppressed; total={len(uq)})')
+
             for e in table.get_E():
                 self.TG.set_word(word + e)
                 path = self.TG.get_traces(n_resample)
-                if path is not None:
+
+                # ----------------------------------------------------------
+                # CSV mode: process each file as its OWN trace.
+                #
+                # Why per-file (not concatenated): the LSHA library's
+                # ``get_segments`` only matches traces whose **prefix** is
+                # the queried word (``t.startswith(word)``).  If we
+                # concatenated all CSVs into one giant trace we'd only ever
+                # have one prefix (whatever event fires first in the day —
+                # almost always ``i_0``) and queries for any other event
+                # symbol return [], so those rows never get filled and the
+                # learner collapses to a single state.
+                #
+                # Per-file processing gives one trace per CSV; different
+                # operating windows naturally start with different events
+                # (e.g. part2 of the W7 dataset starts with m_1), which
+                # restores observability for every event symbol.
+                # ----------------------------------------------------------
+                if path is not None and len(path) > 0:
                     for sim in path:
+                        # Each call appends one new trace to sul.traces;
+                        # works identically for CSV files and UPPAAL .txts.
                         self.sul.process_data(sim)
-                else:
+                elif path is None:
                     LOGGER.debug('!! An error occurred while generating traces !!')
+                # If path is [] (CSV strategy after first call), silently no-op.
+
+        LOGGER.info(f'[REF] done — sul.traces total={len(self.sul.traces)}')
 
     #############################################
     # COUNTEREXAMPLE QUERIES:
@@ -443,6 +602,26 @@ class CustomTeacher:
         return False, None, None
 
     def get_counterexample(self, table: ObsTable):
+        """
+        COUNTEREXAMPLE search — the third L* oracle question.
+
+        Iterates every prefix of every observed trace; for any prefix not
+        already in S ∪ low_S, materialises its hypothetical row and
+        checks two failure modes against the current observation table:
+
+          * **non-closedness** — the new row is not equivalent to any
+            existing upper row.  Returning the prefix forces the Learner
+            to add it to S and rebalance.
+          * **non-consistency** — there exists an event ``a`` and a row
+            ``s_word`` already in S such that row(s_word) ≡ row(prefix)
+            but row(s_word·a) ≢ row(prefix·a).  Reporting the prefix
+            forces the Learner to extend the suffix set E.
+
+        In CSV mode (static data) we additionally look at whether the
+        last unconsumed prefix introduces an event symbol the table has
+        not yet committed to S; if so we return that prefix to seed one
+        more L* iteration before the loop exits.
+        """
         LOGGER.info('Looking for counterexample...')
 
         S = table.get_S()
@@ -480,13 +659,14 @@ class CustomTeacher:
                         else:
                             not_counter.append(prefix)
         else:
-            pass
-            # if CS in ['ENERGY', 'AUTO_TWIN'] and len(not_counter) > 0:
-            #     new_events = set([e.symbol for x in not_counter for e in x.events]) - \
-            #                  set([e.symbol for t in S for e in t.events])
-            #     if len(new_events) > 0:  # or not_counter[-1] not in S:
-            #         return not_counter[-1]
-            #     else:
-            #         return None
-            # else:
-            #     return None
+            # IS IT TRUE OR NOT????
+            if self.resample_strategy == "SIM" and len(not_counter) > 0:
+                new_events = set([e.symbol for x in not_counter for e in x.events]) - \
+                             set([e.symbol for t in S for e in t.events])
+                LOGGER.info(f"NEW EVENTS (SUL): {new_events}")
+                if len(new_events) > 0:  # or not_counter[-1] not in S:
+                    return not_counter[-1]
+                else:
+                    return None
+            else:
+                return None

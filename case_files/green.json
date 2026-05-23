@@ -1,0 +1,71 @@
+{
+  "name": "GREEN Decanter v2",
+  "email": "reza.ghadiri.1998@gmail.com",
+  "resample_strategy": "SIM",
+  "driver_signal": [
+    "MarciaDecanter","MarciaEspulsore","MarciaPmpFango","MarciaCocleaFango",
+    "LavaggioInterno","LavaggioEsterno"
+  ],
+  "main_variable": "CicloAttivo",
+  "context_variables": ["PresenzaAllarme"],
+  "noise": 0.3,
+  "n_min": 5,
+  "p_value": 0.05,
+  "mi_query": false,
+  "plot_ddtw": false,
+  "ht_query": true,
+  "ht_query_type": "S",
+  "eq_condition": "w",
+  "is_aggregation": true,
+  "user_json": {
+    "case_study": "GREEN",
+    "version": "V2_Decanter_BOOL_clustered",
+    "variables": [
+      { "name": "CicloAttivo",       "role": "estimated", "type": "BOOL" },
+      { "name": "MarciaDecanter",    "role": "driver",    "type": "BOOL" },
+      { "name": "MarciaEspulsore",   "role": "driver",    "type": "BOOL" },
+      { "name": "MarciaPmpFango",    "role": "driver",    "type": "BOOL" },
+      { "name": "MarciaCocleaFango", "role": "driver",    "type": "BOOL" },
+      { "name": "LavaggioInterno",   "role": "driver",    "type": "BOOL" },
+      { "name": "LavaggioEsterno",   "role": "driver",    "type": "BOOL" },
+      { "name": "PresenzaAllarme",   "role": "context",   "type": "BOOL" }
+    ],
+    "models": [ { "id": 0, "name": "state", "type": "MEAN" } ],
+    "events": [
+      { "symbol": "dec_on",    "model_id": 0, "guard": "MarciaDecanter == 1 and prev.MarciaDecanter == 0" },
+      { "symbol": "dec_off",   "model_id": 0, "guard": "MarciaDecanter == 0 and prev.MarciaDecanter == 1" },
+      { "symbol": "esp_on",    "model_id": 0, "guard": "MarciaEspulsore == 1 and prev.MarciaEspulsore == 0" },
+      { "symbol": "esp_off",   "model_id": 0, "guard": "MarciaEspulsore == 0 and prev.MarciaEspulsore == 1" },
+      { "symbol": "cyc_on",    "model_id": 0, "guard": "CicloAttivo == 1 and prev.CicloAttivo == 0" },
+      { "symbol": "cyc_off",   "model_id": 0, "guard": "CicloAttivo == 0 and prev.CicloAttivo == 1" },
+      { "symbol": "pmp_on",    "model_id": 0, "guard": "MarciaPmpFango == 1 and prev.MarciaPmpFango == 0" },
+      { "symbol": "pmp_off",   "model_id": 0, "guard": "MarciaPmpFango == 0 and prev.MarciaPmpFango == 1" },
+      { "symbol": "coc_on",    "model_id": 0, "guard": "MarciaCocleaFango == 1 and prev.MarciaCocleaFango == 0" },
+      { "symbol": "coc_off",   "model_id": 0, "guard": "MarciaCocleaFango == 0 and prev.MarciaCocleaFango == 1" },
+      { "symbol": "wi_on",     "model_id": 0, "guard": "LavaggioInterno == 1 and prev.LavaggioInterno == 0" },
+      { "symbol": "wi_off",    "model_id": 0, "guard": "LavaggioInterno == 0 and prev.LavaggioInterno == 1" },
+      { "symbol": "we_on",     "model_id": 0, "guard": "LavaggioEsterno == 1 and prev.LavaggioEsterno == 0" },
+      { "symbol": "we_off",    "model_id": 0, "guard": "LavaggioEsterno == 0 and prev.LavaggioEsterno == 1" },
+      { "symbol": "alarm_in",  "model_id": 0, "guard": "PresenzaAllarme == 1 and prev.PresenzaAllarme == 0" },
+      { "symbol": "alarm_out", "model_id": 0, "guard": "PresenzaAllarme == 0 and prev.PresenzaAllarme == 1" },
+      { "symbol": "idle",      "model_id": 0, "guard": "" }
+    ],
+    "constants": {},
+    "aliases": {},
+    "trace_generation": {
+      "strategy": "CSV",
+      "csv": {
+        "wide_or_long":       "long",
+        "object_name_column": "DataObjectName",
+        "filter_object":      "DecanterMB",
+        "field_column":       "DataObjectField",
+        "value_column":       "Value",
+        "timestamp_column":   "TimeStamp",
+        "time_format":        "datetime",
+        "interpolate_method": "ffill",
+        "max_length":         50
+      },
+      "physics_constants": {}
+    }
+  }
+}

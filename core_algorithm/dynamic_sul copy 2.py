@@ -159,7 +159,6 @@ MODEL TYPES
   LINEAR_GROWTH
 """
 
-import json
 import math
 import re
 import numpy as np
@@ -1263,21 +1262,6 @@ def label_event_dynamic(signals, index, args=None):
             continue
         context[key]            = arr[index]
         context[f"prev_{key}"]  = arr[index - 1] if index > 0 else arr[index]
-
-    # The estimated/main variable is renamed to the internal key ``main``
-    # in the signals dict by _build_target_vars.  Expose it under its
-    # original friendly name too, so guards written against the
-    # user-facing variable name (``CicloAttivo``, ``POWER``, ``T_r``, …)
-    # resolve regardless of whether the user reads the friendly name or
-    # the literal ``main``.  Without this, a guard like
-    #   "CicloAttivo == 1 and prev.CicloAttivo == 0"
-    # silently fails with a NoneType subscript error in safe_eval and
-    # the event is skipped — exactly the failure mode that masked the
-    # cyc_on/cyc_off events for the GREEN decanter case study.
-    main_var_name = (args or {}).get('main_var')
-    if main_var_name and 'main' in context and main_var_name not in context:
-        context[main_var_name]            = context['main']
-        context[f"prev_{main_var_name}"]  = context['prev_main']
 
     # Physics constants (e.g. MIN_SPEED, SPEED_RANGE) so guards can use
     # symbolic names rather than hard-coded magic numbers.

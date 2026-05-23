@@ -1,0 +1,55 @@
+{
+  "name": "ENERGY",
+  "email": "reza.ghadiri.1998@gmail.com",
+  "resample_strategy": "SIM",
+  "driver_signal": ["HEADSTOCK__SPINDLE_MOTOR___1___RPM"],
+  "main_variable": "POWER",
+  "context_variables": [],
+  "noise": 0.0,
+  "n_min": 5,
+  "p_value": 0.05,
+  "mi_query": false,
+  "plot_ddtw": false,
+  "ht_query": true,
+  "ht_query_type": "S",
+  "eq_condition": "w",
+  "is_aggregation": true,
+  "user_json": {
+    "case_study": "ENERGY",
+    "version": "V11_Derive_Power",
+    "variables": [
+      { "name": "POWER", "source": "POWER_kW",                           "role": "estimated", "type": "REAL" },
+      { "name": "RPM",   "source": "HEADSTOCK__SPINDLE_MOTOR___1___RPM", "role": "driver",    "type": "REAL" }
+    ],
+    "models": [
+      { "id": 0, "name": "Idle",     "type": "MEAN" },
+      { "id": 1, "name": "LowRPM",  "type": "MEAN" },
+      { "id": 2, "name": "MidRPM",  "type": "MEAN" },
+      { "id": 3, "name": "HighRPM", "type": "MEAN" }
+    ],
+    "events": [
+      { "symbol": "i_0", "model_id": 0, "guard": "RPM < S_OFF" },
+      { "symbol": "m_0", "model_id": 1, "guard": "S_OFF <= RPM and RPM < S_LOW" },
+      { "symbol": "m_1", "model_id": 2, "guard": "S_LOW <= RPM and RPM < S_MID" },
+      { "symbol": "m_2", "model_id": 3, "guard": "RPM >= S_MID" }
+    ],
+    "trace_generation": {
+      "strategy": "CSV",
+      "csv": {
+        "timestamp_column":   "TimestampUTC",
+        "wide_or_long":       "wide",
+        "interpolate_method": "ffill",
+        "derive_columns": {
+          "HEADSTOCK__SPINDLE_DRIVE___1___ENERGY": { "factor": 60, "clip_min": 0, "target": "POWER_kW" }
+        },
+        "round_columns": {
+          "HEADSTOCK__SPINDLE_MOTOR___1___RPM": 100
+        }
+      },
+      "physics_constants": {
+        "S_OFF": 500, "S_LOW": 2000, "S_MID": 5000,
+        "tolerances": { "RPM": 200 }
+      }
+    }
+  }
+}

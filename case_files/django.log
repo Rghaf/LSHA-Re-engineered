@@ -1,0 +1,80 @@
+Watching for file changes with StatReloader
+[12/May/2026 21:55:33] "GET /api/case-study/ HTTP/1.1" 200 72256
+[12/May/2026 21:56:24] "POST /api/case-study/ HTTP/1.1" 201 1865
+[12/May/2026 21:56:24] "POST /api/csv-files/ HTTP/1.1" 201 165
+[12/May/2026 21:56:24] "POST /api/csv-files/ HTTP/1.1" 201 165
+[12/May/2026 21:56:24] "POST /api/csv-files/ HTTP/1.1" 201 167
+[12/May/2026 21:56:25] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 21:57:27] "POST /api/case-study/ HTTP/1.1" 201 3072
+[12/May/2026 21:57:28] "POST /api/csv-files/ HTTP/1.1" 201 173
+[12/May/2026 21:57:28] "POST /run/ HTTP/1.1" 202 132
+/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 12, 2026 - 21:55:25
+Django version 5.2.7, using settings 'lsha_web.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+/home/rghaf/Projects/lsha_web/core_algorithm/tasks.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 12, 2026 - 22:01:41
+Django version 5.2.7, using settings 'lsha_web.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+[12/May/2026 22:02:43] "POST /run/ HTTP/1.1" 202 132
+[12/May/2026 22:14:49] "GET /admin/ HTTP/1.1" 200 12859
+[12/May/2026 22:14:50] "GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+[12/May/2026 22:14:50] "GET /static/admin/img/icon-changelink.svg HTTP/1.1" 200 380
+[12/May/2026 22:14:50] "GET /static/admin/img/icon-deletelink.svg HTTP/1.1" 200 392
+[12/May/2026 22:14:53] "GET /admin/rest_api/casestudy/ HTTP/1.1" 200 22331
+[12/May/2026 22:14:54] "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+[12/May/2026 22:14:54] "GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+[12/May/2026 22:14:54] "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+[12/May/2026 22:27:24] "POST /api/case-study/ HTTP/1.1" 201 3072
+[12/May/2026 22:27:24] "POST /api/csv-files/ HTTP/1.1" 201 146
+[12/May/2026 22:27:24] "POST /run/ HTTP/1.1" 202 132
+[12/May/2026 22:31:16] "GET /admin/rest_api/casestudy/174/change/ HTTP/1.1" 200 26722
+[12/May/2026 22:31:17] "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+[12/May/2026 22:31:17] "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+[12/May/2026 22:31:22] "GET /admin/rest_api/casestudy/ HTTP/1.1" 200 22623
+[12/May/2026 22:31:22] "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+[12/May/2026 22:31:34] "GET /api/case-study/ HTTP/1.1" 200 170654
+Not Found: /api/run/176
+[12/May/2026 22:32:39] "GET /api/run/176 HTTP/1.1" 404 6474
+Not Found: /run/176
+[12/May/2026 22:32:52] "GET /run/176 HTTP/1.1" 404 2773
+Method Not Allowed: /run/
+[12/May/2026 22:33:22] "GET /run/ HTTP/1.1" 405 5718
+[12/May/2026 22:38:03] "POST /run/ HTTP/1.1" 202 132
+[12/May/2026 22:38:40] "POST /api/case-study/ HTTP/1.1" 201 3072
+[12/May/2026 22:38:41] "POST /api/csv-files/ HTTP/1.1" 201 146
+[12/May/2026 22:38:41] "POST /run/ HTTP/1.1" 202 132
+[12/May/2026 22:40:53] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:41:31] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:41:53] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:42:14] "GET /api/case-study/ HTTP/1.1" 200 179207
+[12/May/2026 22:42:18] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:42:51] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:43:03] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:43:08] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:43:11] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:43:22] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:45:27] "POST /run/ HTTP/1.1" 202 124
+[12/May/2026 22:45:43] "POST /run/ HTTP/1.1" 202 124
+[12/May/2026 22:45:57] "POST /run/ HTTP/1.1" 202 124
+[12/May/2026 22:46:11] "POST /run/ HTTP/1.1" 202 124
+[12/May/2026 22:48:01] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:48:13] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:48:21] "POST /run/ HTTP/1.1" 202 121
+[12/May/2026 22:48:28] "POST /run/ HTTP/1.1" 202 121
