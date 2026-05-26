@@ -1253,6 +1253,15 @@ def label_event_dynamic(signals, index, args=None):
         thresholds (``MIN_SPEED``, ``p_min``, …) instead of magic numbers.
     """
     event_defs = (args or {}).get('events', [])
+    if not event_defs and 'user_json' in (args or {}):
+        # Check if it's nested inside user_json string or dict
+        uj = args['user_json']
+        if isinstance(uj, str):
+            try: uj = json.loads(uj)
+            except: uj = {}
+        if isinstance(uj, dict):
+            event_defs = uj.get('events', [])
+
     if not event_defs:
         return "default_event"
 

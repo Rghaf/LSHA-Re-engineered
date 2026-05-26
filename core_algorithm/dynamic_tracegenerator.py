@@ -80,11 +80,11 @@ class CustomTraceGenerator:
 
     def __init__(self, cs_name, resample_strategy, output_dir, trace_gen_config,
                  uppaal_bin_path=None, uppaal_model_path=None, uppaal_query_path=None,
-                 csv_files=None):
-        # The case study name is used in generated filenames; spaces are
+                 csv_files=None):        # The case study name is used in generated filenames; spaces are
         # replaced with underscores so the file is shell-friendly.
         self.cs_name = cs_name.replace(" ", "_")
-
+        self.uppaal_call_counter = 0
+        self.max_uppaal_budget = 15
         # Centralised normalisation so every later branch agrees on whether
         # we are CSV-mode or UPPAAL-mode regardless of how it was spelt.
         self.resample_strategy = _normalise_strategy(resample_strategy)
@@ -289,8 +289,19 @@ class CustomTraceGenerator:
         RNG so the filename and any randomised UPPAAL choices vary, and
         every file is verified non-empty before it is returned.
         """
+        # --- HOTFIX: Infinite loop short-circuit guard ---
+        if self.uppaal_call_counter >= self.max_uppaal_budget:
+            print(f"[TraceGen Guard] Maximum simulation budget reached ({self.max_uppaal_budget}). Short-circuiting loop to prevent disk flooding.")
+            return []
+        
+        self.uppaal_call_counter += 1
+        # --------------------------------------------------
+        
         self.fix_model()
         new_traces = []
+        
+        # self.fix_model()
+        # new_traces = []
 
         print(f"[TraceGen] Ensuring output dir: {self.output_dir}")
         os.makedirs(self.output_dir, exist_ok=True)

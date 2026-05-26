@@ -126,6 +126,25 @@ def run_lsha_learning_task(case_study_id):
         else:
             data_dict = {}
 
+        # When the UI sends the full outer JSON document as the user_json field
+        # value (instead of only the inner user_json block), the stored string
+        # parses into a dict whose top-level keys are 'name', 'email', …,
+        # 'user_json'.  In that case data_dict.get('events') returns [] because
+        # events live inside data_dict['user_json'].  Unwrap and also recover
+        # any outer-level fields that the DB may not have stored separately.
+        if (isinstance(data_dict, dict)
+                and 'user_json' in data_dict
+                and isinstance(data_dict.get('user_json'), dict)
+                and not any(k in data_dict for k in ('events', 'models', 'variables'))):
+            outer_data = data_dict
+            data_dict = data_dict['user_json']
+            if not CONTEXT_VARIABLES:
+                CONTEXT_VARIABLES = _to_uppaal(outer_data.get('context_variables', []) or [])
+            if not DRIVER_SIGNAL:
+                DRIVER_SIGNAL = _to_uppaal(outer_data.get('driver_signal', []) or [])
+            if not MAIN_VARIABLE:
+                MAIN_VARIABLE = _to_uppaal(outer_data.get('main_variable', '') or '')
+
         events = data_dict.get('events', [])
         real_events = []
         for e in events:

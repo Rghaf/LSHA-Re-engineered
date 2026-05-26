@@ -136,8 +136,10 @@ class ObsTable:
         HEADER = ' ' * max_tabs + '|'
 
         len_row_cells = [[len(s.label) for s in r.state] for r in rows]
-        col_width = [max([l for r in len_row_cells for j_2, l in enumerate(r) if j_2 == j]) for j, e in
-                     enumerate(self.get_E())]
+        col_width = [
+            max((l for r in len_row_cells for j_2, l in enumerate(r) if j_2 == j), default=4)
+            for j, e in enumerate(self.get_E())
+        ]
 
         # column (E set) labels
         HEADER += '|'.join([str(e) + ' ' * (col_width[j] - len(str(e))) for j, e in enumerate(self.get_E())])

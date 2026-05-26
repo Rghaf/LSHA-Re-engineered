@@ -26,8 +26,8 @@
     ],
     "events": [
       { "symbol": "h_0", "trigger_value": 0, "model_id": 1, "guard": "t.ON == 1" },
-      { "symbol": "c_0", "trigger_value": 1, "model_id": 0, "guard": "t.ON == 0 and r.open == 0" },
-      { "symbol": "c_1", "trigger_value": 2, "model_id": 0, "guard": "t.ON == 0 and r.open > 0"  }
+      { "symbol": "c_0", "trigger_value": 0, "model_id": 0, "guard": "t.ON == 0 and r.open == 0" },
+      { "symbol": "c_1", "trigger_value": 1, "model_id": 0, "guard": "t.ON == 0 and r.open > 0"  }
     ],
     "constants": {},
     "trace_generation": {

@@ -119,6 +119,13 @@ class CustomTeacher:
 
         self.TG = trace_generator
         self.hist = {}
+        # Per-word failure counter for ref_query exhaustion tracking.
+        # Words whose segment count never improves after MAX_REF_FAILURES
+        # attempts are skipped on subsequent calls so ref_query terminates
+        # even when some first-event prefixes are structurally unreachable
+        # in the model (e.g. the thermostat always starts with heater-off,
+        # so 'c_0' can never be the first event of any simulation).
+        self._ref_word_fail_count = {}
 
     def add_distribution(self, d: ProbDistribution, f: FlowCondition):
         self.sul.add_distribution(d, f)
@@ -507,12 +514,26 @@ class CustomTeacher:
         # Per-word logs are noisy but we DO want to know the count of distinct
         # words we asked the trace generator to refine.  Cap individual logs
         # at the first 5 to keep the worker log readable on long runs.
+        MAX_REF_FAILURES = 2
         AMBIG_LOG_BUDGET = 5
         for w_i, word in enumerate(uq):
+            word_key = str(word)
+            fail_count = self._ref_word_fail_count.get(word_key, 0)
+            if fail_count >= MAX_REF_FAILURES:
+                LOGGER.info(
+                    f'[REF] Skipping exhausted word "{word}" '
+                    f'(no segment gain after {fail_count} attempts)'
+                )
+                continue
+
             if w_i < AMBIG_LOG_BUDGET:
                 LOGGER.info(f'[REF] requesting traces #{w_i + 1}/{len(uq)} word="{word}"')
             elif w_i == AMBIG_LOG_BUDGET:
                 LOGGER.info(f'[REF] (further per-word logs suppressed; total={len(uq)})')
+
+            count_before = sum(
+                len(self.sul.get_segments(word + e)) for e in table.get_E()
+            )
 
             for e in table.get_E():
                 self.TG.set_word(word + e)
@@ -543,6 +564,21 @@ class CustomTeacher:
                 elif path is None:
                     LOGGER.debug('!! An error occurred while generating traces !!')
                 # If path is [] (CSV strategy after first call), silently no-op.
+
+            # Track whether this word's segment count improved.  If it did
+            # not improve MAX_REF_FAILURES times in a row, mark it exhausted
+            # so future ref_query calls skip it rather than looping forever.
+            count_after = sum(
+                len(self.sul.get_segments(word + e)) for e in table.get_E()
+            )
+            if count_after > count_before:
+                self._ref_word_fail_count.pop(word_key, None)
+            else:
+                self._ref_word_fail_count[word_key] = fail_count + 1
+                LOGGER.info(
+                    f'[REF] Word "{word}": segments unchanged '
+                    f'({count_after}) — failure #{fail_count + 1}/{MAX_REF_FAILURES}'
+                )
 
         LOGGER.info(f'[REF] done — sul.traces total={len(self.sul.traces)}')
 
