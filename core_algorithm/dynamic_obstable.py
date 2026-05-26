@@ -172,8 +172,9 @@ class ObsTable:
         eq_condition = teacher.config.get('eq_condition', 's').lower()
 
         if word in seq_to_loc.keys():
-            loc = [l for l in locations if l.name == seq_to_loc[word]][0]
-            candidate_dest_locs.append(loc)
+            matched = [l for l in locations if l.name == seq_to_loc[word]]
+            if matched:
+                candidate_dest_locs.append(matched[0])
         else:
             curr_row = None
             if word in self.get_S():
@@ -203,12 +204,14 @@ class ObsTable:
             for i, row in enumerate(self.get_upper_observations()):
                 if eq_condition == 's':
                     if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row, strict=True):
-                        loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
-                        candidate_dest_locs.append(loc)
+                        matched = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]]
+                        if matched:
+                            candidate_dest_locs.append(matched[0])
                 else:
                     if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row, strict=False):
-                        loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
-                        candidate_dest_locs.append(loc)
+                        matched = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]]
+                        if matched:
+                            candidate_dest_locs.append(matched[0])
 
         return candidate_dest_locs
 
@@ -286,7 +289,10 @@ class ObsTable:
                     if len(entry_word) == 0:
                         continue
 
-                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)[0]
+                    start_locs = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)
+                    if not start_locs:
+                        continue
+                    start_loc = start_locs[0]
                     dest_locs = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     labels = str(Trace(word[-1:]))
@@ -304,7 +310,10 @@ class ObsTable:
                     if len(entry_word) == 0:
                         continue
 
-                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)[0]
+                    start_locs = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)
+                    if not start_locs:
+                        continue
+                    start_loc = start_locs[0]
                     dest_locs = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     if word != '':

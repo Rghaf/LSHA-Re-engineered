@@ -14,7 +14,7 @@ if str(settings.LSHA_ROOT) not in sys.path:
     sys.path.insert(0, str(settings.LSHA_ROOT))
 
 # --- Imports from your project ---
-from core_algorithm.lsha.sha_learning.domain.lshafeatures import Trace, FlowCondition
+from core_algorithm.lsha.sha_learning.domain.lshafeatures import Trace, TimedTrace, FlowCondition
 from core_algorithm.lsha.sha_learning.domain.sigfeatures import Event, Timestamp, SampledSignal
 # from core_algorithm.lsha.sha_learning.domain.obstable import Row, State, ObsTable
 from core_algorithm.lsha.sha_learning.learning_setup.logger import Logger
@@ -211,12 +211,25 @@ def run_lsha_learning_task(case_study_id):
             # empty list on every subsequent call.  ref_query treats `[]` as
             # "no fresh data available" and silently no-ops, so the loop
             # converges instead of accumulating duplicates.
+            #
+            # bundle_all_csv=true (in trace_generation.csv) treats ALL uploaded
+            # files as a single merged trace rather than individual per-file
+            # traces.  Use this when files cover the same time window but split
+            # signals across them (e.g. GREEN: pump-speed, temperature, and
+            # decanter data in separate CSVs that must be joined before parsing).
+            _csv_sub = trace_gen_config.get('csv', {}) or {}
+            _bundle  = bool(_csv_sub.get('bundle_all_csv', False)
+                            or trace_gen_config.get('bundle_all_csv', False))
+
             _csv_yielded = {'done': False}
-            def _csv_paths_once(*args, **kwargs):
+            def _csv_paths_once(*_args, **_kwargs):
                 if _csv_yielded['done']:
                     return []
                 _csv_yielded['done'] = True
-                return csv_paths
+                # Bundle mode: one "trace" = all files merged.
+                # Per-file mode: one trace per file (default, preserves
+                # per-operating-window observability for Energy/W7 datasets).
+                return [csv_paths] if _bundle else csv_paths
             custom_tg.get_traces = _csv_paths_once
             
         else:
@@ -409,6 +422,9 @@ def run_lsha_learning_task(case_study_id):
                 self.points = points
                 self.t = [pt.t for pt in points]
                 self.values = [pt.value for pt in points]
+                # Pre-sorted seconds array for O(log n) binary search in get_segments.
+                # Points are built from a time-sorted DataFrame so _secs is non-decreasing.
+                self._secs = [pt.timestamp.to_secs() for pt in points]
 
         def parse_adapter(sim, *, args):
             sig_dict = parse_data_dynamic(sim, args=args)
@@ -601,6 +617,48 @@ def run_lsha_learning_task(case_study_id):
             is_chg_pt=partial(is_chg_pt_adapter, args=sul_args),
             args=sul_args
         )
+
+        # ---------------------------------------------------------
+        # TRACE SPLITTING (max_trace_events)
+        #
+        # With a single long trace (e.g. 271 events for GREEN), L*'s
+        # get_segments(word) returns at most ONE segment per word prefix,
+        # which is below any n_min > 1.  The teacher then issues a
+        # counterexample whose length grows with the trace, driving
+        # make_closed to iterate O(n_events) times and producing an
+        # O(n³) hang.
+        #
+        # Setting max_trace_events=K in trace_generation.csv causes
+        # process_data to split the single long trace into ceil(N/K)
+        # sub-traces of ≤K events each (all sharing the same raw signal
+        # array).  get_segments then finds multiple matches per prefix,
+        # satisfying n_min and bounding counterexample length to K.
+        # ---------------------------------------------------------
+        _csv_sub_mt = trace_gen_config.get('csv', {}) or {}
+        _max_trace_events = int(_csv_sub_mt.get('max_trace_events', 0) or 0)
+        if _max_trace_events > 0:
+            _orig_pd = sul.process_data
+
+            def _split_pd(path, _orig=_orig_pd, _max=_max_trace_events):
+                _orig(path)
+                if not sul.traces or len(sul.traces[-1]) <= _max:
+                    return
+                tt   = sul.timed_traces.pop()
+                sigs = sul.signals.pop()
+                sul.traces.pop()
+                n_ev = len(tt)
+                for start in range(0, n_ev, _max):
+                    end = min(start + _max, n_ev)
+                    sub_tt = TimedTrace(list(tt.t[start:end]), list(tt.e[start:end]))
+                    sul.timed_traces.append(sub_tt)
+                    sul.signals.append(sigs)
+                    sul.traces.append(Trace(tt=sub_tt))
+
+            sul.process_data = _split_pd
+            LOGGER.info(
+                f"[PHASE 3] max_trace_events={_max_trace_events}: "
+                "process_data monkey-patched — long traces will be split into sub-traces."
+            )
 
         # ---------------------------------------------------------
         # PHASE 4: CUSTOM TEACHER & LEARNER

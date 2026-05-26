@@ -781,9 +781,13 @@ def _parse_csv(file_paths, target_vars, trace_config):
         # Step 1 – Load all CSVs and concatenate into one DataFrame
         # ---------------------------------------------------------------
         dfs = []
+        column_remap = trace_config.get('column_remap', {})
         for fp in file_paths:
             if str(fp).lower().endswith('.csv'):
-                dfs.append(pd.read_csv(fp))
+                df_i = pd.read_csv(fp)
+                if column_remap:
+                    df_i = df_i.rename(columns=column_remap)
+                dfs.append(df_i)
             else:
                 print(f"[SUL] Skipping non-CSV file: {fp}")
 

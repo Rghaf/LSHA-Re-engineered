@@ -1,0 +1,37 @@
+{
+  "name": "HRI V5",
+  "email": "reza.ghadiri.1998@gmail.com",
+  "resample_strategy": "UPPAAL",
+  "driver_signal": ["h.busy"],
+  "main_variable": "F",
+  "context_variables": [],
+  "noise": 0.0,
+  "n_min": 10,
+  "p_value": 0.05,
+  "mi_query": false,
+  "plot_ddtw": false,
+  "ht_query": true,
+  "ht_query_type": "S",
+  "eq_condition": "S",
+  "is_aggregation": false,
+  "user_json": {
+    "variables": [
+      { "name": "F",      "source": "humanFatigue[currH-1]",                    "role": "estimated", "type": "REAL" },
+      { "name": "h.busy", "source": "amy.busy or amy.p_2 or amy.run or amy.p_4", "role": "driver",    "type": "INT"  }
+    ],
+    "models": [
+      { "id": 0, "name": "Idle Recovery (Decay)",  "type": "EXP_DECAY"  },
+      { "id": 1, "name": "Busy Fatigue (Growth)",  "type": "EXP_GROWTH" }
+    ],
+    "events": [
+      { "symbol": "u_1", "trigger_value": 0, "model_id": 1, "guard": "h.busy == 1" },
+      { "symbol": "d_1", "trigger_value": 1, "model_id": 0, "guard": "h.busy == 0" }
+    ],
+    "constants": {},
+    "trace_generation": {
+      "strategy": "UPPAAL",
+      "xml_force_variable": "force_act",
+      "max_length": 15
+    }
+  }
+}

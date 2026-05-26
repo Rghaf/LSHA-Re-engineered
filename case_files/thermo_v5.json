@@ -1,0 +1,40 @@
+{
+  "name": "THERMO V5",
+  "email": "reza.ghadiri.1998@gmail.com",
+  "resample_strategy": "UPPAAL",
+  "driver_signal": ["t.ON", "r.open"],
+  "main_variable": "T_r",
+  "context_variables": [],
+  "noise": 0.0,
+  "n_min": 10,
+  "p_value": 0.05,
+  "mi_query": false,
+  "plot_ddtw": false,
+  "ht_query": true,
+  "ht_query_type": "S",
+  "eq_condition": "S",
+  "is_aggregation": false,
+  "user_json": {
+    "variables": [
+      { "name": "T_r",    "source": "T_r",    "role": "estimated", "type": "REAL" },
+      { "name": "t.ON",   "source": "t.ON",   "role": "driver",    "type": "INT"  },
+      { "name": "r.open", "source": "r.open", "role": "driver",    "type": "INT"  }
+    ],
+    "models": [
+      { "id": 0, "name": "Cooling Mode (Decay)",  "type": "EXP_DECAY"  },
+      { "id": 1, "name": "Heating Mode (Growth)", "type": "EXP_GROWTH" }
+    ],
+    "events": [
+      { "symbol": "h_0", "trigger_value": 0, "model_id": 1, "guard": "t.ON == 1 and r.open == 0" },
+      { "symbol": "h_1", "trigger_value": 1, "model_id": 1, "guard": "t.ON == 1 and r.open > 0"  },
+      { "symbol": "c_0", "trigger_value": 0, "model_id": 0, "guard": "t.ON == 0 and r.open == 0" },
+      { "symbol": "c_1", "trigger_value": 1, "model_id": 0, "guard": "t.ON == 0 and r.open > 0"  }
+    ],
+    "constants": {},
+    "trace_generation": {
+      "strategy": "UPPAAL",
+      "xml_force_variable": "force_open",
+      "max_length": 15
+    }
+  }
+}
