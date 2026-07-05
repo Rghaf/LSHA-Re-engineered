@@ -132,6 +132,12 @@ def run_lsha_learning_task(case_study_id):
         # 'user_json'.  In that case data_dict.get('events') returns [] because
         # events live inside data_dict['user_json'].  Unwrap and also recover
         # any outer-level fields that the DB may not have stored separately.
+        # Tracks any outer-JSON parameter overrides recovered below.
+        # Used later to fix DB fields that were saved incorrectly (e.g. boolean
+        # fields like mi_query that the multipart form post serialised as the
+        # string "false" which DRF stored as True).
+        json_params = {}
+
         if (isinstance(data_dict, dict)
                 and 'user_json' in data_dict
                 and isinstance(data_dict.get('user_json'), dict)
@@ -144,6 +150,13 @@ def run_lsha_learning_task(case_study_id):
                 DRIVER_SIGNAL = _to_uppaal(outer_data.get('driver_signal', []) or [])
             if not MAIN_VARIABLE:
                 MAIN_VARIABLE = _to_uppaal(outer_data.get('main_variable', '') or '')
+            # Recover algorithm parameters from the outer JSON so they override
+            # whatever the DB stored (multipart form posts can lose boolean False).
+            for _param in ('mi_query', 'plot_ddtw', 'ht_query', 'ht_query_type',
+                           'eq_condition', 'n_min', 'p_value', 'noise',
+                           'is_aggregation'):
+                if _param in outer_data:
+                    json_params[_param] = outer_data[_param]
 
         events = data_dict.get('events', [])
         real_events = []
@@ -458,10 +471,15 @@ def run_lsha_learning_task(case_study_id):
 
             res = []
             t_floats = sig_dict.get('time', [])
-            legacy_driver = args.get('driver')
-            if isinstance(legacy_driver, list) and len(legacy_driver) > 0:
-                legacy_driver = legacy_driver[0]
-                args['driver'] = legacy_driver
+            driver_val = args.get('driver')
+            # For the legacy label-relabelling branch below, we need a single
+            # string.  But DO NOT mutate args['driver'] — it is a shared dict
+            # and overwriting it with the first element would drop all other
+            # driver signals (e.g. r.open for Thermo V5) on every subsequent call.
+            if isinstance(driver_val, list) and len(driver_val) > 0:
+                legacy_driver = driver_val[0]
+            else:
+                legacy_driver = driver_val
 
             # IMPORTANT: keep the Timestamp.to_secs() value identical to the
             # raw float in ``sig_dict['time']`` so label_event_adapter's
@@ -683,15 +701,15 @@ def run_lsha_learning_task(case_study_id):
         # PHASE 4: CUSTOM TEACHER & LEARNER
         # ---------------------------------------------------------
         teacher_config = {
-            'noise': getattr(cs_instance, 'noise', 0.0),
-            'p_value': getattr(cs_instance, 'p_value', 0.05),
-            'mi_query': getattr(cs_instance, 'mi_query', False),
-            'plot_ddtw': getattr(cs_instance, 'plot_ddtw', False),
-            'ht_query': getattr(cs_instance, 'ht_query', False),
-            'ht_query_type': getattr(cs_instance, 'ht_query_type', 'D'),
-            'eq_condition': getattr(cs_instance, 'eq_condition', 's'),
-            'n_min': getattr(cs_instance, 'n_min', 10),
-            'is_aggregation': getattr(cs_instance, 'is_aggregation', False)
+            'noise':          json_params.get('noise',          getattr(cs_instance, 'noise',          0.0)),
+            'p_value':        json_params.get('p_value',        getattr(cs_instance, 'p_value',        0.05)),
+            'mi_query':       json_params.get('mi_query',       getattr(cs_instance, 'mi_query',       False)),
+            'plot_ddtw':      json_params.get('plot_ddtw',      getattr(cs_instance, 'plot_ddtw',      False)),
+            'ht_query':       json_params.get('ht_query',       getattr(cs_instance, 'ht_query',       False)),
+            'ht_query_type':  json_params.get('ht_query_type',  getattr(cs_instance, 'ht_query_type',  'D')),
+            'eq_condition':   json_params.get('eq_condition',   getattr(cs_instance, 'eq_condition',   's')),
+            'n_min':          json_params.get('n_min',          getattr(cs_instance, 'n_min',          10)),
+            'is_aggregation': json_params.get('is_aggregation', getattr(cs_instance, 'is_aggregation', False)),
         }
 
         teacher = CustomTeacher(
